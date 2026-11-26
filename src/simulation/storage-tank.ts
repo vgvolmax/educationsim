@@ -1,4 +1,4 @@
-import { finiteTemperature } from './mixing';
+import { transferLiquid } from './liquid-inventory';
 import type { CompiledSystem } from './types';
 
 export type CellState = { massKg: number; temperatureC: number };
@@ -26,12 +26,8 @@ export function bindStorage(system: CompiledSystem, stores: readonly StorageBind
 /** Drain then add the declared mass; no implicit fluid, volume, or topology change. */
 export function applyService(cell: CellState, cp: number, exchange: ServiceExchange):
   { next: CellState; makeupJ: number; drainJ: number } | null {
-  const { fillKg, fillC, drainKg } = exchange;
-  if (!Number.isFinite(fillKg) || fillKg < 0 || !Number.isFinite(drainKg) || drainKg < 0 ||
-      drainKg > cell.massKg || !finiteTemperature(fillC)) return null;
-  const massKg = cell.massKg - drainKg + fillKg;
-  const makeupJ = fillKg * cp * fillC, drainJ = drainKg * cp * cell.temperatureC;
-  const temperatureC = ((cell.massKg - drainKg) * cell.temperatureC + fillKg * fillC) / massKg;
-  return Number.isFinite(massKg) && massKg > 0 && finiteTemperature(temperatureC) &&
-    Number.isFinite(makeupJ) && Number.isFinite(drainJ) ? { next: { massKg, temperatureC }, makeupJ, drainJ } : null;
+  const result = transferLiquid(cell, cp, exchange);
+  if (!result || result.next.temperatureC === null) return null; // B04 needs a nonempty thermal cell.
+  return { next: { massKg: result.next.massKg, temperatureC: result.next.temperatureC },
+    makeupJ: result.makeupJ, drainJ: result.drainJ };
 }
