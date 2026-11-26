@@ -18,7 +18,8 @@
     "build": "vite build",
     "check": "npm run lint && npm run typecheck && npm test && npm run build",
     "package:win": "electron-forge make --platform=win32 --arch=x64",
-    "test:desktop": "playwright test --project=desktop"
+    "test:desktop": "playwright test --project=desktop",
+    "catalog:validate": "node scripts/validate-catalog.ts"
   },
   "dependencies": {
     "react": "19.3.1",
