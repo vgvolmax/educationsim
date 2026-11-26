@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import type { FormEvent, KeyboardEvent } from 'react';
 import { rectangleOf } from '../project/editor-geometry';
 import { equipmentRegistry, trainingRegistry } from '../project/registry';
@@ -10,10 +10,13 @@ import type { TemplateId } from '../project/templates';
 import { PortInspector } from './PortInspector';
 import { RouteTools } from './RouteTools';
 import type { RouteOverlay } from './RouteTools';
+import type { SceneLive } from '../views/scene/Scene';
 import { Schematic } from '../views/schematic/Schematic';
 import { editorId } from './useProject';
 import type { ProjectController } from './useProject';
 import './editor.css';
+
+const Scene = lazy(async () => ({ default: (await import('../views/scene/Scene')).Scene }));
 
 function RoomForm({ room, ctl }: { room: Room; ctl: ProjectController }) {
   const dims = rectangleOf(room);
@@ -32,6 +35,9 @@ function RoomForm({ room, ctl }: { room: Room; ctl: ProjectController }) {
 }
 
 export function Editor({ ctl, project, preset, onHome }: { ctl: ProjectController; project: ProjectDocument; preset?: TemplateId; onHome(): void }) {
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [sceneFailed, setSceneFailed] = useState(false);
+  const [liveScene, setLiveScene] = useState<SceneLive | null>(null);
   const [level, setLevel] = useState(project.viewPreferences.level);
   const [selected, setSelected] = useState<string | null>(null);
   const [pending, setPending] = useState<PortEndpoint | null>(null);
@@ -109,6 +115,8 @@ export function Editor({ ctl, project, preset, onHome }: { ctl: ProjectControlle
       <button onClick={addRoom} disabled={project.rooms.length >= 12}>Добавить комнату</button>
       <button disabled={!ctl.history?.past.length} onClick={() => { setPending(null); ctl.changeHistory('undo'); }}>Отменить</button>
       <button disabled={!ctl.history?.future.length} onClick={() => { setPending(null); ctl.changeHistory('redo'); }}>Повторить</button>
+      <button aria-pressed={viewMode === '2d'} onClick={() => setViewMode('2d')}>2D схема</button>
+      <button aria-pressed={viewMode === '3d'} onClick={() => { setSceneFailed(false); setViewMode('3d'); }}>3D сцена</button>
       <label><input type="checkbox" checked={water} onChange={(e) => setWater(e.target.checked)} /> Вода</label>
       <label><input type="checkbox" checked={control} onChange={(e) => setControl(e.target.checked)} /> Управление</label>
     </div>
@@ -125,8 +133,12 @@ export function Editor({ ctl, project, preset, onHome }: { ctl: ProjectControlle
         </button>)}
       </aside>
       <div className="editor-center">
-      <Schematic project={project} level={level} selected={selected} onSelect={setSelected} water={water} control={control} overlay={overlay.revision === project.revision ? overlay : undefined} />
-        <SimulationPanel project={project} preset={preset} onFocus={(id) => {
+      {sceneFailed && <p className="editor-error" role="alert">3D недоступно. Схема и расчёт сохранены в 2D.</p>}
+      {viewMode === '3d' ? <Suspense fallback={<p>Загружаем 3D…</p>}><Scene project={project} level={level} selected={selected}
+        live={liveScene} onSelect={setSelected} onUnavailable={() => { setSceneFailed(true); setViewMode('2d'); }} /></Suspense> :
+      <Schematic project={project} level={level} selected={selected} onSelect={setSelected} water={water} control={control} overlay={overlay.revision === project.revision ? overlay : undefined} />}
+
+        <SimulationPanel project={project} preset={preset} onLive={viewMode === '3d' ? setLiveScene : undefined} onFocus={(id) => {
           const focus = project.components.find((c) => c.id === id);
           if (focus) { setLevel(focus.level); setSelected(id); setOverlay({}); }
         }} />

@@ -9,6 +9,7 @@ import type { SessionView, SimulationSpeed } from '../simulation/session';
 import { Comparison, RunHistory } from '../views/graph/RunHistory';
 import { numberRu, RunReadings } from '../views/measurements/RunReadings';
 import { createSimulationClient } from '../worker/client';
+import type { SceneLive } from '../views/scene/Scene';
 import { editorId } from './useProject';
 
 type Client = ReturnType<typeof createSimulationClient>;
@@ -17,8 +18,8 @@ const modes: Record<Client['state']['mode'], string> = {
   idle: 'Не подготовлен', loading: 'Подготавливается', paused: 'На паузе', running: 'Выполняется', stopped: 'Остановлен', stalled: 'Связь с расчётом потеряна',
 };
 
-export function SimulationPanel({ project, preset, onFocus }: {
-  project: ProjectDocument; preset?: TemplateId; onFocus(id: string): void;
+export function SimulationPanel({ project, preset, onFocus, onLive }: {
+  project: ProjectDocument; preset?: TemplateId; onFocus(id: string): void; onLive?(live: SceneLive | null): void;
 }) {
   const [run, setRun] = useState<Run | null>(null);
   const [view, setView] = useState<Client['state'] | null>(null);
@@ -69,6 +70,15 @@ export function SimulationPanel({ project, preset, onFocus }: {
   function command(value: SimulationCommand) { current?.client.send({ kind: 'command', command: value }); }
 
   const frame = current ? view?.view : null;
+  useEffect(() => {
+    if (!onLive) return;
+    if (!current || !frame) { onLive(null); return; }
+    const valves = Object.fromEntries(Object.entries(current.scenario.hydraulic.valves ?? {}).flatMap(([id, valve]) =>
+      'opening' in valve && ['balance', 'shutoff', 'two-way'].includes(valve.kind) ? [[id, valve.opening] as const] : []));
+    onLive({ frame, system: current.scenario.system, valves,
+      setValve: (id, opening) => { current.client.send({ kind: 'command', command: { kind: 'set-valve', channelId: id, opening } }); } });
+  }, [current, frame, onLive]);
+
   const available = Boolean(current && view?.mode !== 'loading' && view?.mode !== 'stalled' && view?.mode !== 'stopped');
   const selected = current?.scenario.system.hydraulicChannels.find((x) => x.id === branch && x.origin.linkId) ??
     current?.scenario.system.hydraulicChannels.find((x) => x.origin.loopRouteId);

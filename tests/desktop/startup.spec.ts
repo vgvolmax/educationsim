@@ -93,6 +93,14 @@ test('launches the packaged app offline, retains storage and rejects a second in
     await page.getByRole('button', { name: 'Закрыть клапан' }).click();
     await page.getByRole('button', { name: 'Один шаг' }).click();
     await expect(page.locator('[data-meter="link:pipe-a"]')).toHaveText('0,00 л/мин');
+    await page.getByRole('button', { name: '3D сцена' }).click();
+    const scene = page.locator('canvas[data-scene]');
+    const fallback = page.getByText('3D недоступно. Схема и расчёт сохранены в 2D.');
+    await expect(scene.or(fallback)).toBeVisible();
+    if (await scene.isVisible()) await page.getByRole('button', { name: '2D схема' }).click();
+    await expect(page.locator('[data-link="pipe-a"]')).toBeVisible();
+    await expect(page.locator('[data-meter="link:pipe-a"]')).toHaveText('0,00 л/мин');
+
 
 
 
