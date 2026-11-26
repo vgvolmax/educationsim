@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "id": "L14",
+  "title": "Клиент: радиаторы и один санузел",
+  "goal": "Сравните холодную одиночную петлю с RTL и горячую радиаторную подачу. Уточните параметры и обоснуйте, какой принцип ограничения уместен.",
+  "explanation": "Проверенный принцип RTL подходит только при соответствующих условиях; для горячей подачи рассматривают подмес или иное снижение температуры. Ни один опыт не подтверждает SKU автоматически.",
+  "minutes": 8,
+  "hints": [
+    "Температура, геометрия и точка измерения влияют на выбор. Нельзя считать всякий ограничитель теплоносителя проверенным RTL."
+  ],
+  "cases": [
+    {
+      "id": "bath",
+      "title": "Одиночная прохладная петля",
+      "template": "rtl-loop",
+      "waterC": 24
+    },
+    {
+      "id": "mixed",
+      "title": "Радиаторная подача с подмесом",
+      "template": "floor-and-radiators",
+      "profile": "mixed-low",
+      "waterC": 32
+    }
+  ],
+  "actions": [
+    {
+      "id": "advance",
+      "label": "Рассчитать 80 тиков",
+      "type": "step",
+      "ticks": 80
+    },
+    {
+      "id": "go-mixed",
+      "label": "Проверить радиаторную систему",
+      "type": "case",
+      "caseId": "mixed"
+    },
+    {
+      "id": "inlets",
+      "label": "Уточнить подачу, площадь, длину и точку измерения",
+      "type": "answer",
+      "field": "clarification",
+      "value": "inlets"
+    },
+    {
+      "id": "sku-only",
+      "label": "Достаточно названия изделия",
+      "type": "answer",
+      "field": "clarification",
+      "value": "sku"
+    },
+    {
+      "id": "choice",
+      "label": "Холодная петля: проверить RTL; горячая подача: проверить подмес",
+      "type": "answer",
+      "field": "choice",
+      "value": "distinguish"
+    },
+    {
+      "id": "limit",
+      "label": "Не переносить условные пределы на SKU без паспорта",
+      "type": "answer",
+      "field": "limit",
+      "value": "passport"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "bath",
+      "label": "Расход одиночной петли подтверждён",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-a",
+      "min": 1e-07,
+      "max": 0.002,
+      "caseId": "bath"
+    },
+    {
+      "id": "radiator",
+      "label": "Радиаторная ветвь реально работает",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:rad-feed",
+      "min": 1e-07,
+      "max": 0.002,
+      "caseId": "mixed"
+    },
+    {
+      "id": "inputs",
+      "label": "Запрошены исходные параметры",
+      "type": "answer",
+      "field": "clarification",
+      "value": "inlets"
+    },
+    {
+      "id": "distinguish",
+      "label": "Решения зависят от исходных условий",
+      "type": "answer",
+      "field": "choice",
+      "value": "distinguish"
+    },
+    {
+      "id": "boundary",
+      "label": "Ограничение по паспорту сохранено",
+      "type": "answer",
+      "field": "limit",
+      "value": "passport"
+    }
+  ]
+}

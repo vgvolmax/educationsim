@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "id": "L06",
+  "title": "Закрытые зоны и перепуск",
+  "goal": "Закройте обе зоны, проверьте поведение закрытого контура и перепускного пути, затем отдельно проверьте остановку насоса.",
+  "explanation": "При закрытии петель насос может остаться на рабочем перепаде без расхода. Перепуск даёт отдельный путь; отключение снимает напор.",
+  "minutes": 8,
+  "hints": [
+    "Положительный поток через перепуск не означает, что хоть одна петля пола получает воду."
+  ],
+  "cases": [
+    {
+      "id": "locked",
+      "title": "Две закрытые петли",
+      "template": "direct",
+      "profile": "closed-loops"
+    },
+    {
+      "id": "bypass",
+      "title": "Перепуск на той же схеме",
+      "template": "direct",
+      "profile": "with-bypass"
+    },
+    {
+      "id": "stop",
+      "title": "Перепуск и питание насоса",
+      "template": "direct",
+      "profile": "with-bypass"
+    }
+  ],
+  "actions": [
+    {
+      "id": "go-bypass",
+      "label": "Подключить учебный перепуск",
+      "type": "case",
+      "caseId": "bypass"
+    },
+    {
+      "id": "go-stop",
+      "label": "Перейти к отключению питания",
+      "type": "case",
+      "caseId": "stop"
+    },
+    {
+      "id": "step",
+      "label": "Рассчитать один тик",
+      "type": "step",
+      "ticks": 1
+    },
+    {
+      "id": "off",
+      "label": "Отключить питание",
+      "type": "command",
+      "command": {
+        "kind": "power",
+        "powered": false
+      },
+      "forCase": "stop"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "closed",
+      "label": "В закрытой петле нет циркуляции",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-a",
+      "min": 0,
+      "max": 1e-10,
+      "caseId": "locked"
+    },
+    {
+      "id": "spill",
+      "label": "Перепуск реально принимает поток",
+      "type": "range",
+      "metric": "flow",
+      "target": "component:bypass:passive",
+      "min": 1e-07,
+      "max": 0.002,
+      "caseId": "bypass"
+    },
+    {
+      "id": "off",
+      "label": "После отключения расход перепуска равен нулю",
+      "type": "range",
+      "metric": "flow",
+      "target": "component:bypass:passive",
+      "min": 0,
+      "max": 1e-10,
+      "caseId": "stop"
+    }
+  ]
+}

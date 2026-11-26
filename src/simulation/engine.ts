@@ -43,6 +43,10 @@ export function openSimulation(input: SimulationScenario): Result<SimulationEngi
     }
     profileByCell.set(cell, profile.id); cellDomains.set(cell, channel.domainId);
   }
+  if (scenario.teachingBoundary && (!profileByCell.has(scenario.teachingBoundary.sampleCellId) ||
+      !finiteTemperature(scenario.teachingBoundary.maximumC))) {
+    return failure('invalid_engine_scenario', 'boundary', 'Некорректная температурная граница учебного опыта.');
+  }
   if (Object.keys(scenario.fluid.cells).length !== profileByCell.size) {
     return failure('invalid_engine_scenario', 'fluid', 'Тепловая ёмкость не принадлежит текущей схеме.');
   }
@@ -120,6 +124,13 @@ export function openSimulation(input: SimulationScenario): Result<SimulationEngi
       else return failure('invalid_engine_command', 'commands', 'Команда содержит неизвестную цель или состояние.');
     }
     const tick = state.tick + 1, diagnostics: Diagnostic[] = [];
+    const boundary = scenario.teachingBoundary;
+    if (boundary && state.fluid.cells[boundary.sampleCellId]!.temperatureC > boundary.maximumC) {
+      return { ok: true, value: { ...state, tick, health: 'stopped', hydraulics: null, sources: {}, energy: null },
+        diagnostics: [{ code: 'lesson_temperature_boundary', path: boundary.sampleCellId, severity: 'warning',
+          message: 'Без ограничителя учебная модель останавливает расчёт при перегреве. Текущие показания недоступны.' }] };
+    }
+
     const faults = advanceFaults(state.faults, { channels: [...channels.keys()], sensors: samples, actuators: [...actuatorIds] }, faultCommands);
     if (!faults.ok) return faults;
     const previousBuilding = state.building ?? (scenario.building && {

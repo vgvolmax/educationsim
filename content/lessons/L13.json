@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "id": "L13",
+  "title": "Клиент: дальняя петля холодная",
+  "goal": "Найдите более сопротивляющуюся ветвь и верните расход балансировкой. Ответьте покупателю, почему нельзя выбрать насос только по максимальному напору.",
+  "explanation": "Высокий максимальный напор не доказывает нужный расход в рабочей точке. Сначала локализуют дисбаланс и проверяют условия схемы.",
+  "minutes": 8,
+  "hints": [
+    "Смотрите расходы обеих ветвей под нагрузкой. Прикройте лёгкую петлю и проверьте рабочую точку вместо покупки наугад."
+  ],
+  "cases": [
+    {
+      "id": "main",
+      "title": "Дальняя петля имеет большее сопротивление",
+      "template": "direct",
+      "diameter": {
+        "pipe-b": 0.009
+      }
+    }
+  ],
+  "actions": [
+    {
+      "id": "step",
+      "label": "Рассчитать один тик",
+      "type": "step",
+      "ticks": 1
+    },
+    {
+      "id": "balance",
+      "label": "Прикрыть короткую петлю до 45 %",
+      "type": "command",
+      "command": {
+        "kind": "set-valve",
+        "channelId": "link:pipe-a",
+        "opening": 0.45
+      }
+    },
+    {
+      "id": "wrong",
+      "label": "Прикрыть дальнюю петлю",
+      "type": "command",
+      "command": {
+        "kind": "set-valve",
+        "channelId": "link:pipe-b",
+        "opening": 0.3
+      }
+    },
+    {
+      "id": "curve",
+      "label": "Обоснование: расход и напор в рабочей точке",
+      "type": "answer",
+      "field": "explanation",
+      "value": "curve"
+    },
+    {
+      "id": "max-head",
+      "label": "Обоснование: достаточно максимального напора",
+      "type": "answer",
+      "field": "explanation",
+      "value": "max"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "a",
+      "label": "Короткая петля сохраняет расход",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-a",
+      "min": 1e-06,
+      "max": 0.001
+    },
+    {
+      "id": "b",
+      "label": "Дальняя петля восстановила расчётный расход",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-b",
+      "min": 3.8e-05,
+      "max": 4.4e-05
+    },
+    {
+      "id": "did-balance",
+      "label": "Выбран балансировочный опыт",
+      "type": "did",
+      "actionId": "balance"
+    },
+    {
+      "id": "curve",
+      "label": "Проверена рабочая точка, а не максимум",
+      "type": "answer",
+      "field": "explanation",
+      "value": "curve"
+    }
+  ]
+}

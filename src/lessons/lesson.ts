@@ -44,12 +44,16 @@ export function gradeLesson(lesson: PreparedLesson, state: LessonState, views: R
     if (rule.type === 'range' || rule.type === 'difference') {
       const observed = observe(current, rule.metric, rule.target);
       if (rule.type === 'difference') {
-        const other = observe(views[rule.otherCase], rule.metric, rule.otherTarget ?? rule.target);
-        actual = observed === null || other === null ? null : observed - other;
+        const comparison = views[rule.otherCase];
+        const other = observe(comparison, rule.metric, rule.otherTarget ?? rule.target);
+        actual = observed === null || other === null ||
+          (rule.matchTick !== false && comparison?.snapshot.tick !== current?.snapshot.tick) ? null : observed - other;
       } else actual = observed;
       passed = actual !== null && actual >= rule.min && actual <= rule.max;
     } else if (rule.type === 'did') passed = state.actions.some((a) => a.actionId === rule.actionId && (!rule.caseId || a.caseId === rule.caseId));
     else if (rule.type === 'answer') passed = state.answers[rule.field] === rule.value;
+    else if (rule.type === 'diagnostic') passed = !!current?.diagnostics.some((d) => d.code === rule.code);
+    else if (rule.type === 'sourceReason') passed = !!current && !current.stale && current.snapshot.sources[rule.componentId]?.reason === rule.reason;
     else if (rule.type === 'event') passed = !!current?.events.some((e) => e.kind === rule.event && e.componentId === rule.componentId);
     else {
       passed = Object.entries(rule.quantities).every(([key, qty]) => state.basket[key] === qty) &&
@@ -95,6 +99,7 @@ export function createLessonAttempt(lesson: PreparedLesson) {
       return true;
     },
     frame: () => sessions.get(state.caseId)?.view,
+    frameFor: (id: string) => sessions.get(id)?.view,
     score: () => gradeLesson(lesson, state, Object.fromEntries([...sessions].map(([id, s]) => [id, s.view]))),
     record: (): Record<string, SimulationRecord | null> => Object.fromEntries([...sessions].map(([id, s]) => [id, s.record()])),
     retry() { sessions.clear(); state = startLessonState(lesson); focus(state.caseId); },

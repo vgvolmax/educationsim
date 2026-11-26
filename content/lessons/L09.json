@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "id": "L09",
+  "title": "Защита пола от перегрева",
+  "goal": "Пропустите горячую воду в двух учебных режимах. Зафиксируйте срабатывание ограничителя и отказ расчёта без него.",
+  "explanation": "На защищённом стенде отключается запрос нагрева. Незащищённый стенд выходит за пределы модели и не выдаёт рабочие числа.",
+  "minutes": 8,
+  "hints": [
+    "Отсутствие численного результата не равняется нулю. При неизвестной защите модель не продолжает опасный режим."
+  ],
+  "cases": [
+    {
+      "id": "protected",
+      "title": "Защитная цепь",
+      "template": "direct",
+      "waterC": 70
+    },
+    {
+      "id": "unprotected",
+      "title": "Учебная граница без защиты",
+      "template": "direct",
+      "profile": "without-limiter",
+      "waterC": 70
+    }
+  ],
+  "actions": [
+    {
+      "id": "step",
+      "label": "Рассчитать один тик",
+      "type": "step",
+      "ticks": 1
+    },
+    {
+      "id": "go-unprotected",
+      "label": "Сравнить стенд без ограничителя",
+      "type": "case",
+      "caseId": "unprotected"
+    },
+    {
+      "id": "go-protected",
+      "label": "Вернуться к защищённой схеме",
+      "type": "case",
+      "caseId": "protected"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "tripped",
+      "label": "Защита реально запретила нагрев",
+      "type": "event",
+      "caseId": "protected",
+      "componentId": "supply-limit",
+      "event": "limiter-tripped"
+    },
+    {
+      "id": "sourceoff",
+      "label": "Мощность источника после отсечки",
+      "type": "range",
+      "metric": "power",
+      "target": "source",
+      "min": 0,
+      "max": 0,
+      "caseId": "protected"
+    },
+    {
+      "id": "halt",
+      "label": "Незащищённая модель остановилась",
+      "type": "diagnostic",
+      "code": "lesson_temperature_boundary",
+      "caseId": "unprotected"
+    }
+  ]
+}

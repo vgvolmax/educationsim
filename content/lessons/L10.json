@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "id": "L10",
+  "title": "Два насоса и гидравлический разделитель",
+  "goal": "На двух этажах сравните влияние изменения скорости второго насоса с разделителем и без него. Проверьте направление перетока и обратный клапан.",
+  "explanation": "Разделитель уменьшает гидравлическое взаимодействие при заданных нагрузках. Обратный клапан закрывает только обратный путь.",
+  "minutes": 12,
+  "hints": [
+    "Смотрите знак расхода общей ветви и изменение первой ветви при одинаковом изменении скорости вторичного насоса."
+  ],
+  "cases": [
+    {
+      "id": "series-slow",
+      "title": "Без разделителя: медленно",
+      "template": "two-floors-separator",
+      "profile": "series-slow"
+    },
+    {
+      "id": "series-fast",
+      "title": "Без разделителя: быстро",
+      "template": "two-floors-separator",
+      "profile": "series-fast"
+    },
+    {
+      "id": "sep-slow",
+      "title": "С разделителем: медленно",
+      "template": "two-floors-separator",
+      "profile": "separator-slow"
+    },
+    {
+      "id": "sep-fast",
+      "title": "С разделителем: быстро",
+      "template": "two-floors-separator",
+      "profile": "separator-fast"
+    },
+    {
+      "id": "check",
+      "title": "Обратный клапан в общей ветви",
+      "template": "two-floors-separator",
+      "profile": "separator-check"
+    }
+  ],
+  "actions": [
+    {
+      "id": "step",
+      "label": "Рассчитать один тик",
+      "type": "step",
+      "ticks": 1
+    },
+    {
+      "id": "go-series-fast",
+      "label": "Ускорить насос без разделителя",
+      "type": "case",
+      "caseId": "series-fast"
+    },
+    {
+      "id": "go-sep-slow",
+      "label": "Поставить разделитель: медленно",
+      "type": "case",
+      "caseId": "sep-slow"
+    },
+    {
+      "id": "go-sep-fast",
+      "label": "Ускорить насос с разделителем",
+      "type": "case",
+      "caseId": "sep-fast"
+    },
+    {
+      "id": "go-check",
+      "label": "Проверить обратный клапан",
+      "type": "case",
+      "caseId": "check"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "series",
+      "label": "Без разделения первая ветвь меняется сильнее",
+      "type": "difference",
+      "metric": "flow",
+      "target": "component:source:source",
+      "min": 3.5e-05,
+      "max": 8e-05,
+      "caseId": "series-fast",
+      "otherCase": "series-slow"
+    },
+    {
+      "id": "sep",
+      "label": "С разделителем первая ветвь меняется незначительно",
+      "type": "difference",
+      "metric": "flow",
+      "target": "component:source:source",
+      "min": -5e-06,
+      "max": 5e-06,
+      "caseId": "sep-fast",
+      "otherCase": "sep-slow"
+    },
+    {
+      "id": "reverse",
+      "label": "Переток имеет обратный знак",
+      "type": "range",
+      "metric": "flow",
+      "target": "component:storage:internal-mixing",
+      "min": -0.0003,
+      "max": -1e-07,
+      "caseId": "sep-fast"
+    },
+    {
+      "id": "valve",
+      "label": "Обратный клапан закрыл этот путь",
+      "type": "range",
+      "metric": "flow",
+      "target": "component:storage:internal-mixing",
+      "min": -1e-10,
+      "max": 1e-10,
+      "caseId": "check"
+    }
+  ]
+}

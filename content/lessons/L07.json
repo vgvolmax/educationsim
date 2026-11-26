@@ -1,0 +1,188 @@
+{
+  "version": 1,
+  "id": "L07",
+  "title": "Воздух, фильтр и восстановление",
+  "goal": "Сравните воздушную пробку в одной петле с общим засорением. Восстановите расход развоздушиванием и очисткой на отдельных стендах.",
+  "explanation": "Сравнивают показания до обслуживания и после. Для воздуха применимо развоздушивание, для фильтра — очистка.",
+  "minutes": 8,
+  "hints": [
+    "Локальная пробка обнуляет одну петлю. Засорение в общей трубе уменьшает расход сразу нескольких петель."
+  ],
+  "cases": [
+    {
+      "id": "air",
+      "title": "Локальная пробка",
+      "template": "direct"
+    },
+    {
+      "id": "dirty",
+      "title": "Засор общего участка",
+      "template": "direct"
+    },
+    {
+      "id": "clear",
+      "title": "Обслуживание",
+      "template": "direct"
+    }
+  ],
+  "actions": [
+    {
+      "id": "step",
+      "label": "Рассчитать один тик",
+      "type": "step",
+      "ticks": 1
+    },
+    {
+      "id": "go-dirty",
+      "label": "Перейти к общему фильтру",
+      "type": "case",
+      "caseId": "dirty"
+    },
+    {
+      "id": "go-clear",
+      "label": "Перейти к восстановлению",
+      "type": "case",
+      "caseId": "clear"
+    },
+    {
+      "id": "air-lock",
+      "label": "Ввести пробку первой петли",
+      "type": "command",
+      "command": {
+        "kind": "fault",
+        "command": {
+          "kind": "air",
+          "id": "link:pipe-a",
+          "extent": 1
+        }
+      },
+      "forCase": "air"
+    },
+    {
+      "id": "dirt",
+      "label": "Засорить общую подводку",
+      "type": "command",
+      "command": {
+        "kind": "fault",
+        "command": {
+          "kind": "filter",
+          "id": "link:supply",
+          "extent": 1
+        }
+      },
+      "forCase": "dirty"
+    },
+    {
+      "id": "clear-air",
+      "label": "Ввести пробку на стенде обслуживания",
+      "type": "command",
+      "command": {
+        "kind": "fault",
+        "command": {
+          "kind": "air",
+          "id": "link:pipe-a",
+          "extent": 1
+        }
+      },
+      "forCase": "clear"
+    },
+    {
+      "id": "clear-dirt",
+      "label": "Засорить фильтр на стенде обслуживания",
+      "type": "command",
+      "command": {
+        "kind": "fault",
+        "command": {
+          "kind": "filter",
+          "id": "link:supply",
+          "extent": 1
+        }
+      },
+      "forCase": "clear"
+    },
+    {
+      "id": "vent",
+      "label": "Развоздушить первую петлю",
+      "type": "command",
+      "command": {
+        "kind": "fault",
+        "command": {
+          "kind": "vent",
+          "id": "link:pipe-a"
+        }
+      },
+      "forCase": "clear"
+    },
+    {
+      "id": "clean",
+      "label": "Очистить общий фильтр",
+      "type": "command",
+      "command": {
+        "kind": "fault",
+        "command": {
+          "kind": "clean",
+          "id": "link:supply"
+        }
+      },
+      "forCase": "clear"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "blocked",
+      "label": "Пробка блокирует только первую петлю",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-a",
+      "min": 0,
+      "max": 1e-10,
+      "caseId": "air"
+    },
+    {
+      "id": "second",
+      "label": "У соседней петли есть расход",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-b",
+      "min": 1e-07,
+      "max": 0.002,
+      "caseId": "air"
+    },
+    {
+      "id": "recovered",
+      "label": "После обслуживания общий расход выше",
+      "type": "difference",
+      "metric": "flow",
+      "target": "link:supply",
+      "min": 1e-07,
+      "max": 0.002,
+      "caseId": "clear",
+      "otherCase": "dirty",
+      "matchTick": false
+    },
+    {
+      "id": "did-vent",
+      "label": "Воздух удалён правильным способом",
+      "type": "did",
+      "actionId": "vent",
+      "caseId": "clear"
+    },
+    {
+      "id": "did-clean",
+      "label": "Фильтр очищен",
+      "type": "did",
+      "actionId": "clean",
+      "caseId": "clear"
+    },
+    {
+      "id": "restored",
+      "label": "Расход первой петли восстановлен",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-a",
+      "min": 1e-07,
+      "max": 0.002,
+      "caseId": "clear"
+    }
+  ]
+}

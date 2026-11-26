@@ -104,6 +104,8 @@ export function LessonPanel({ lesson, onBack, onEditor }: Props) {
       <div><p className="eyebrow">Урок {lesson.definition.id} · {lesson.definition.minutes} мин</p><h1>{lesson.definition.title}</h1></div>
     </header>
     <p className="lesson-goal">{lesson.definition.goal}</p>
+    {lesson.definition.sourceCard && <p>Публичный снимок комплектации · <a href={lesson.definition.sourceCard.url}
+      target="_blank" rel="noreferrer">{lesson.definition.sourceCard.article} ↗</a></p>}
     <div className="lesson-grid">
       <section aria-label="Схема урока">
         <div className="lesson-case"><strong>{bound.definition.title}</strong><span>{view ? 'Модельный тик: ' + view.snapshot.tick : 'Готовим учебную схему…'}</span></div>

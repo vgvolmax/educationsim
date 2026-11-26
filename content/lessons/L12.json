@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "id": "L12",
+  "title": "Мокрый и сухой пол",
+  "goal": "Сравните переходный режим мокрого и сухого пола при одинаковой погоде, затем проверьте похолодание и не смешивайте уставку с лимитом покрытия.",
+  "explanation": "Режим конструкции задаёт тепловую ёмкость и запаздывание. Наружная температура меняет потери, а покрытие ограничивает допустимую температуру поверхности.",
+  "minutes": 8,
+  "hints": [
+    "Сравнивайте температуру поверхности после одинакового модельного времени. Уставка воздуха и лимит поверхности принадлежат разным частям модели."
+  ],
+  "cases": [
+    {
+      "id": "wet",
+      "title": "Мокрая конструкция",
+      "template": "direct",
+      "waterC": 32
+    },
+    {
+      "id": "dry",
+      "title": "Сухая конструкция",
+      "template": "direct",
+      "waterC": 32,
+      "profile": "dry-floor"
+    },
+    {
+      "id": "cold",
+      "title": "Сухой пол при похолодании",
+      "template": "direct",
+      "waterC": 32,
+      "outdoorC": -20,
+      "profile": "dry-floor"
+    }
+  ],
+  "actions": [
+    {
+      "id": "advance",
+      "label": "Просчитать 120 тиков",
+      "type": "step",
+      "ticks": 120
+    },
+    {
+      "id": "go-dry",
+      "label": "Сравнить сухой пол",
+      "type": "case",
+      "caseId": "dry"
+    },
+    {
+      "id": "go-cold",
+      "label": "Изменить наружную температуру",
+      "type": "case",
+      "caseId": "cold"
+    },
+    {
+      "id": "separate",
+      "label": "Уставка воздуха отдельно от лимита поверхности",
+      "type": "answer",
+      "field": "limit",
+      "value": "separate"
+    },
+    {
+      "id": "same",
+      "label": "Уставку воздуха используем как лимит покрытия",
+      "type": "answer",
+      "field": "limit",
+      "value": "same"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "inertia",
+      "label": "При одинаковом времени поверхность прогрелась по-разному",
+      "type": "difference",
+      "metric": "surfaceTemperature",
+      "target": "loop-a",
+      "min": 0.01,
+      "max": 20,
+      "caseId": "dry",
+      "otherCase": "wet"
+    },
+    {
+      "id": "weather",
+      "label": "Похолодание изменило температуру воздуха",
+      "type": "difference",
+      "metric": "roomTemperature",
+      "target": "room-a",
+      "min": -20,
+      "max": -0.001,
+      "caseId": "cold",
+      "otherCase": "dry"
+    },
+    {
+      "id": "separate",
+      "label": "Лимит поверхности отделён от уставки",
+      "type": "answer",
+      "field": "limit",
+      "value": "separate"
+    }
+  ]
+}

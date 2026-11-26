@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "id": "L08",
+  "title": "Расширительный бак и сброс",
+  "goal": "Сравните изменение объёма при недоступном баке с опытом после восстановления расширительного объёма. Найдите срабатывание клапана.",
+  "explanation": "В восстановленном учебном контуре газовая полость допускает расширение. При превышении учебного порога рассчитан сброс; для установки нужен паспорт.",
+  "minutes": 8,
+  "hints": [
+    "Если податливость неизвестна, численное давление нельзя считать достоверным. Проверьте конкретное сообщение модели."
+  ],
+  "cases": [
+    {
+      "id": "closed",
+      "title": "Податливость не установлена",
+      "template": "direct",
+      "profile": "tank-absent"
+    },
+    {
+      "id": "restored",
+      "title": "Бак и характеристика клапана",
+      "template": "direct",
+      "profile": "tank-relief"
+    }
+  ],
+  "actions": [
+    {
+      "id": "go-restored",
+      "label": "Восстановить учебный расширительный объём",
+      "type": "case",
+      "caseId": "restored"
+    },
+    {
+      "id": "fill",
+      "label": "Увеличить объём на стенде без бака",
+      "type": "command",
+      "command": {
+        "kind": "service",
+        "cellId": "component:source:source",
+        "fillKg": 1,
+        "fillC": 20,
+        "drainKg": 0
+      },
+      "forCase": "closed"
+    },
+    {
+      "id": "fill-relief",
+      "label": "Увеличить объём на стенде с баком",
+      "type": "command",
+      "command": {
+        "kind": "service",
+        "cellId": "component:source:source",
+        "fillKg": 2,
+        "fillC": 20,
+        "drainKg": 0
+      },
+      "forCase": "restored"
+    },
+    {
+      "id": "step",
+      "label": "Рассчитать один тик",
+      "type": "step",
+      "ticks": 1
+    }
+  ],
+  "criteria": [
+    {
+      "id": "closed",
+      "label": "Неизвестная податливость останавливает расчёт",
+      "type": "diagnostic",
+      "code": "pressure_capacity_unknown",
+      "caseId": "closed"
+    },
+    {
+      "id": "relief",
+      "label": "Клапан сброса сработал",
+      "type": "diagnostic",
+      "code": "relief_active",
+      "caseId": "restored"
+    },
+    {
+      "id": "gauge",
+      "label": "Показание точки после сброса в учебном диапазоне",
+      "type": "range",
+      "metric": "pressure",
+      "target": "source:return",
+      "min": 140000,
+      "max": 160000,
+      "caseId": "restored"
+    }
+  ]
+}
