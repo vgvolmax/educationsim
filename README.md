@@ -7,3 +7,4 @@
 - [Техническое задание](docs/superpowers/specs/2026-11-26-volmax-educationsim-design.md)
 - [План реализации и критерии приёмки](docs/superpowers/plans/2026-11-26-volmax-educationsim-plan.md)
 - [Покрытие и применимость ассортимента](docs/superpowers/specs/2026-11-26-volmax-catalog-coverage.md)
+- [Реестр технической документации по артикулам](docs/superpowers/specs/2026-11-26-volmax-equipment-documentation.md)
