@@ -126,11 +126,13 @@
 
 **После:** B02. **Файлы:** `src/simulation/valves.ts`, `src/simulation/hydraulics.ts`, `tests/simulation/valves.test.ts`.
 
-- [ ] Создать `check_valve_blocks_reverse_flow`, `bypass_only_opens_above_threshold`, `zero_flow_when_closed`, `dynamic_regulator_respects_working_range`, `nonconverging_network_returns_diagnostic`.
-- [ ] Подключить модели клапанов: запорный, балансировочный, зональный, обратный, перепускной, двух-/трёхходовой и ограничитель расхода. У сетки фильтра задавать рост сопротивления. Перепуск учитывать как новый активный путь в той же сети.
-- [ ] Запустить `npm run test -- tests/simulation/hydraulics.test.ts tests/simulation/valves.test.ts`. Зафиксировать `feat: model regulation and flow protection`.
+- [x] Создать `check_valve_blocks_reverse_flow`, `bypass_only_opens_above_threshold`, `zero_flow_when_closed`, `dynamic_regulator_respects_working_range`, `nonconverging_network_returns_diagnostic`.
+- [x] Подключить модели клапанов: запорный, балансировочный, зональный, обратный, перепускной, двух-/трёхходовой и ограничитель расхода. У сетки фильтра задавать рост сопротивления. Перепуск учитывать как новый активный путь в той же сети.
+- [x] Запустить `npm run test -- tests/simulation/hydraulics.test.ts tests/simulation/valves.test.ts`. Зафиксировать `feat: model regulation and flow protection`.
 
 [Контракт клапанов и регулирования](../specs/2026-11-26-valve-contract.md).
+
+Подтверждение B03: [PR #11](https://github.com/vgvolmax/educationsim/pull/11), [проверки main](https://github.com/vgvolmax/educationsim/actions/runs/45861167134).
 
 ### B04. Рассчитать перенос тепла и смешение
 
@@ -139,6 +141,8 @@
 - [ ] Зафиксировать `mixture_is_35c_in_v03`, `loop_emits_348w_in_v04`, `zero_flow_stops_advective_heat_but_allows_residual_heat`, `exchanger_conserves_heat_with_isolated_fluids`, `buffer_accumulates_and_loses_heat`, `global_energy_ledger_matches_v09`. Проверить, что внутренний перенос взаимно компенсируется, источнику, наружным потерям, подпитке и сбросу соответствуют отдельные члены баланса.
 - [ ] Реализовать `advanceFluidTemperatures(input: FluidThermalInput): Result<FluidThermalState>`, смешение по энтальпии, потерю наружу, модель радиатора, буфер, гидрострелку, тепловую связь двух сторон теплообменника.
 - [ ] Запустить `npm run test -- tests/simulation/heat-transfer.test.ts`. Зафиксировать `feat: simulate heat and mixing`.
+
+[Контракт переноса тепла](../specs/2026-11-26-thermal-transport-contract.md).
 
 ### B05. Рассчитать пол, комнату и климат
 

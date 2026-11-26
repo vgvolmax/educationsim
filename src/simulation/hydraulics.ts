@@ -29,6 +29,7 @@ type ChannelState = {
   valve?: ValveStatus;
 };
 export type HydraulicSnapshot = {
+  projectId: string;
   projectRevision: number;
   pressurePa: Record<string, number | null>;
   flowResidualM3s: Record<string, number>;
@@ -130,7 +131,7 @@ export function solveHydraulics(system: CompiledSystem, inputs: HydraulicInputs)
     valves.set(id, profile);
   }
   const snapshot: HydraulicSnapshot = {
-    projectRevision: system.projectRevision, pressurePa: Object.create(null) as HydraulicSnapshot['pressurePa'],
+    projectId: system.projectId, projectRevision: system.projectRevision, pressurePa: Object.create(null) as HydraulicSnapshot['pressurePa'],
     flowResidualM3s: Object.create(null) as HydraulicSnapshot['flowResidualM3s'],
     channels: Object.create(null) as HydraulicSnapshot['channels'],
   };
