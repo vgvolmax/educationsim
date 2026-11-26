@@ -31,6 +31,8 @@ export function StartConditions({ room, project, ctl }: { room: Room; project: P
 type Pending = { command: ReplaceComponentCommand; changes: { name: string; detach: boolean }[]; routes: string[] };
 export function Inspector({ component, project, ctl }: { component: ComponentInstance; project: ProjectDocument; ctl: ProjectController }) {
   const definition = equipmentRegistry.get(component.typeId);
+  const snapshot = project.appliedCatalogSnapshots.find(({ id }) => id === component.catalogSnapshotId);
+  const editable = !snapshot || snapshot.basis === 'training';
   const [replacement, setReplacement] = useState('');
   const [preview, setPreview] = useState<Pending | null>(null);
   const options = [...equipmentRegistry.values()].filter((d) => d.id !== component.typeId);
@@ -68,9 +70,10 @@ export function Inspector({ component, project, ctl }: { component: ComponentIns
   return <div className="inspector">
     <details className="editor-section" open>
       <summary>Параметры оборудования</summary>
-      <p>{component.catalogSnapshotId ? 'Паспортный снимок. Редактирование учебных полей недоступно.' : 'Учебный экземпляр, не паспорт изделия.'}</p>
+      <p>{!editable ? 'Паспортный снимок. Редактирование учебных полей недоступно.' : 'Учебный экземпляр, не паспорт изделия.'}</p>
+      {snapshot?.basis === 'training' && <p>Учебный аналог из каталога · {snapshot.catalogReleaseId}. {snapshot.catalogCard?.article}</p>}
       {definition && <p>{definition.installation}</p>}
-      {definition && !component.catalogSnapshotId && <form className="room-fields" key={JSON.stringify(component.parameters)} onSubmit={parameters}>
+      {definition && editable && <form className="room-fields" key={JSON.stringify(component.parameters)} onSubmit={parameters}>
         {Object.entries(definition.settings).map(([name, setting]) => <PropertyInput key={name} name={name} setting={setting} value={component.parameters[name]} />)}
         <button type="submit">Применить параметры</button>
       </form>}

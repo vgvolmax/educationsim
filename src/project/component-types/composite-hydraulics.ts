@@ -10,7 +10,7 @@ type ParameterValues = ComponentType['defaultParameters'];
 
 /** Opt-in teaching laws for the composite paths. Use only for zero-SKU fixtures.
  * The caller still supplies link friction, independent source/pipe laws, and thermal/control bindings. */
-export function trainingCompositeHydraulics(system: CompiledSystem): Result<HydraulicInputs> {
+export function trainingCompositeHydraulics(system: CompiledSystem, teachingSnapshots: ReadonlySet<string> = new Set()): Result<HydraulicInputs> {
   const resistance: Record<string, HydraulicInputs['resistance'][string]> = {};
   const pumps: Record<string, PumpInput> = {};
   const valves: Record<string, ValveInput> = {};
@@ -19,7 +19,7 @@ export function trainingCompositeHydraulics(system: CompiledSystem): Result<Hydr
   for (const component of system.components) {
     const definition = equipmentRegistry.get(component.typeId);
     if (!definition || !variants.has(definition.variant)) continue;
-    if (component.catalogSnapshotId !== null) return { ok: false, diagnostics: [{
+    if (component.catalogSnapshotId !== null && !teachingSnapshots.has(component.catalogSnapshotId)) return { ok: false, diagnostics: [{
       code: 'training_profile_with_catalog', severity: 'error', path: 'components.' + component.id,
       message: 'Учебные характеристики нельзя применять к паспортному изделию.',
     }] };

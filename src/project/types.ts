@@ -45,14 +45,14 @@ export type ProjectEdit = NamedCommand & (
   | RoomEdit
   | InspectorEdit
   | { kind: 'rename_project'; title: string }
-  | { kind: 'add_component'; component: ComponentInstance }
+  | { kind: 'add_component'; component: ComponentInstance; catalogSnapshot?: CatalogParameterSnapshot }
   | { kind: 'remove_component'; componentId: string }
   | { kind: 'connect_hydronic'; link: HydronicLink }
   | { kind: 'connect_control'; link: ControlLink }
   | { kind: 'disconnect'; domain: 'hydronic' | 'control'; linkId: string }
 );
 export type ReplaceComponentCommand = NamedCommand & {
-  kind: 'replace_component'; componentId: string; typeId: string; expectedRevision: number;
+  kind: 'replace_component'; componentId: string; typeId: string; expectedRevision: number; catalogSnapshot?: CatalogParameterSnapshot;
 };
 export type ProjectCommand = ProjectEdit | ReplaceComponentCommand |
   (NamedCommand & { kind: 'batch'; edits: readonly ProjectEdit[] });

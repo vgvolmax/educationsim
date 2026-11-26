@@ -104,6 +104,15 @@ test('launches the packaged app offline, retains storage and rejects a second in
 
 
 
+    await page.getByRole('button', { name: 'Каталог ВОЛМАКС', exact: true }).click();
+    await expect(page.getByText('Версия: volmax-public-20261126-v1')).toBeVisible();
+    await page.getByLabel('Файл обновления каталога').setInputFiles({
+      name: 'smoke-catalog.json', mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({ version: 1, releaseId: 'packaged-catalog', publishedOn: '2026-11-26', offers: [], products: [], kits: [] })),
+    });
+    await page.getByRole('button', { name: 'Активировать выпуск' }).click();
+    await expect(page.getByText('Версия: packaged-catalog')).toBeVisible();
+
     expect(app.windows()).toHaveLength(1);
     expect(page.url()).toBe('app://educationsim/');
 
@@ -138,6 +147,9 @@ test('launches the packaged app offline, retains storage and rejects a second in
   try {
     const page = await restarted.firstWindow();
     await expect(page.getByRole('heading', { name: 'Волмакс · Тёплый пол' })).toBeVisible();
+    await page.getByRole('button', { name: 'Прямое подключение: две петли' }).click();
+    await page.getByRole('button', { name: 'Каталог ВОЛМАКС', exact: true }).click();
+    await expect(page.getByText('Версия: packaged-catalog')).toBeVisible();
     const read = await page.evaluate(() => new Promise((resolve, reject) => {
       const request = indexedDB.open('desktop-smoke', 1);
       request.onerror = () => reject(request.error);

@@ -15,7 +15,7 @@ export function editInspector(project: ProjectDocument, edit: InspectorEdit): Re
     case 'set_component_parameters': {
       const component = project.components.find((c) => c.id === edit.componentId);
       if (!component || !equipmentRegistry.has(component.typeId)) return fail('unknown_equipment', 'Учебный компонент не найден.');
-      if (component.catalogSnapshotId) return fail('catalog_parameter_locked', 'Паспортные значения нельзя изменить как учебные параметры.');
+      if (component.catalogSnapshotId && project.appliedCatalogSnapshots.find(({ id }) => id === component.catalogSnapshotId)?.basis !== 'training') return fail('catalog_parameter_locked', 'Паспортные значения нельзя изменить как учебные параметры.');
       const allowed = validateEquipmentSettings(component.typeId, edit.values);
       if (!allowed.ok) return allowed;
       return done({ ...project, components: project.components.map((c) => c.id === component.id
@@ -38,6 +38,14 @@ export function editInspector(project: ProjectDocument, edit: InspectorEdit): Re
       const room = project.rooms.find((r) => r.id === route.roomId);
       const link = project.hydronicLinks.find((l) => l.id === route.linkId);
       if (!room || !link) return fail('route_target_missing', 'Комната или связь не найдены.');
+      for (const endpoint of [link.from, link.to]) {
+        const installed = project.components.find((c) => c.id === endpoint.componentId);
+        const source = project.appliedCatalogSnapshots.find((snapshot) => snapshot.id === installed?.catalogSnapshotId);
+        if (source?.catalogCard?.context === 'radiator') {
+          return fail('catalog_context_mismatch', 'Радиаторная позиция не применяется как элемент петли тёплого пола.');
+        }
+      }
+
       if (!Number.isFinite(route.spacingM) || route.spacingM < .05 || route.spacingM > .4) {
         return fail('invalid_spacing', 'Шаг напольной петли должен быть от 50 до 400 мм.');
       }
