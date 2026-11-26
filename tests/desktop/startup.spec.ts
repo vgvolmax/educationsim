@@ -85,6 +85,15 @@ test('launches the packaged app offline, retains storage and rejects a second in
     await page.getByRole('button', { name: 'Предпросмотр трассы' }).click();
     await expect(page.locator('[data-route-preview]')).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Принять трассу' })).toBeDisabled();
+    await page.getByRole('button', { name: 'Подготовить прогон' }).click();
+    await page.getByRole('button', { name: 'Один шаг' }).click();
+    await expect(page.getByText('Модельный тик: 1')).toBeVisible();
+    const firstFlow = await page.locator('[data-meter="link:pipe-a"]').textContent();
+    expect(firstFlow).toMatch(/^[1-9]\d*,\d{2} л\/мин$/);
+    await page.getByRole('button', { name: 'Закрыть клапан' }).click();
+    await page.getByRole('button', { name: 'Один шаг' }).click();
+    await expect(page.locator('[data-meter="link:pipe-a"]')).toHaveText('0,00 л/мин');
+
 
 
     expect(app.windows()).toHaveLength(1);

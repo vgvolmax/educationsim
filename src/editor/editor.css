@@ -73,3 +73,28 @@
 .route-warnings { color: #7b3e2c; padding-left: 1rem; }
 .route-preview { fill: none; stroke: #a35135; stroke-width: .047; stroke-dasharray: .08 .04; }
 .route-mark { fill: #fff; stroke: #a35135; stroke-width: .05; }
+.editor-center { min-width: 0; }
+.simulation-panel { margin: 1rem min(2vw, 1.2rem); border-top: 2px solid var(--teal); padding: .85rem .25rem 1rem; }
+.simulation-title { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .55rem; margin-bottom: .55rem; }
+.simulation-title .eyebrow { border-top: 0; padding-top: 0; }
+.simulation-title h2 { font-size: 1.28rem; }
+.simulation-actions, .run-status { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; padding: .4rem 0; }
+.run-status { font: 700 .86rem/1.3 monospace; gap: .75rem; }
+.run-hint { font-size: .82rem; color: #5b584d; }
+.summary-readings { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%, 10rem),1fr)); gap: .35rem; }
+.summary-readings div { border: 1px solid var(--edge); padding: .4rem .55rem; background: var(--paper); }
+.summary-readings dt { font-size: .8rem; }
+.summary-readings dd { margin: 0; font-size: 1rem; font-family: monospace; }
+.reading-list, .messages, .event-list { max-height: 19rem; overflow: auto; }
+.meter-row { display: grid; grid-template-columns: 1fr 1fr; gap: .25rem; border-top: 1px solid var(--edge); padding: .35rem .15rem; }
+.meter-row p { grid-column: 1 / -1; font-size: .86rem; }
+.meter-row output { text-align: right; font-family: monospace; }
+.messages, .event-list { padding-left: 1.1rem; }
+.event-list button { margin-left: .45rem; }
+.run-chart { display: block; max-width: 22rem; min-height: 6rem; }
+.run-chart-axis { fill: none; stroke: #6f6a5f; }
+.run-chart-line { fill: none; stroke: var(--copper); stroke-width: 2; }
+.comparison-table { max-height: 16rem; overflow: auto; }
+.comparison-table table { width: 100%; text-align: left; border-collapse: collapse; overflow-wrap: anywhere; }
+.comparison-table th, .comparison-table td { border: 1px solid var(--edge); padding: .25rem .35rem; font-size: .8rem; }
+@media (max-width: 510px) { .editor-center { order: -1; } }

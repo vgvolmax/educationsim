@@ -9,6 +9,7 @@ import './shell.css';
 export function App() {
   const ctl = useProject();
   const [editing, setEditing] = useState(false);
+  const [preset, setPreset] = useState<TemplateId | undefined>();
   const [runtime, setRuntime] = useState('Проверяем локальные ресурсы…');
   useEffect(() => {
     const signal = new AbortController();
@@ -53,9 +54,10 @@ export function App() {
       if (!result.ok) { ctl.setError(result.diagnostics[0].message); return; }
       ctl.open(result.value);
     }
+    setPreset(template);
     setEditing(true);
   }
-  if (editing && ctl.history) return <Editor project={ctl.history.current} ctl={ctl} onHome={() => setEditing(false)} />;
+  if (editing && ctl.history) return <Editor project={ctl.history.current} preset={preset} ctl={ctl} onHome={() => setEditing(false)} />;
   return (
     <main className="shell">
       <p className="eyebrow">Учебная лаборатория · Волмакс</p>
