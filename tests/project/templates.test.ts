@@ -90,3 +90,18 @@ test('benchmark_fixture_reaches_supported_scale with 48 flowing circuits and fin
   }
   expect(Object.values(session.view.snapshot.fluid.cells).every(({ temperatureC }) => Number.isFinite(temperatureC))).toBe(true);
 });
+
+test('the application can open the stress fixture as a real editor project without a custom test registry', async () => {
+  const { compileLiveScenario } = await import('../../src/project/live-scenario');
+  const p = parseProject(benchmark);
+  if (!p.ok) throw new Error(JSON.stringify(p.diagnostics));
+  const scenario = compileLiveScenario(p.value);
+  if (!scenario.ok) throw new Error(JSON.stringify(scenario.diagnostics));
+  const session = createSession(scenario.value);
+  if (!session.ok) throw new Error(JSON.stringify(session.diagnostics));
+  session.value.stepOnce();
+  expect(session.value.view.mode).toBe('paused');
+  for (const route of p.value.loopRoutes) {
+    expect(session.value.view.snapshot.hydraulics?.channels['link:' + route.linkId]?.flowM3s).toBeGreaterThan(0);
+  }
+});

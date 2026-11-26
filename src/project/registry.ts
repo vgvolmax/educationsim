@@ -1,3 +1,4 @@
+import { stressTypes } from './stress-profiles';
 import familyManifest from '../../content/equipment/families.json';
 import { accepts, define } from './component-types/definitions';
 import type { EquipmentDefinition } from './component-types/definitions';
@@ -84,6 +85,7 @@ export const equipmentRegistry: ReadonlyMap<string, EquipmentDefinition> = equip
 
 /** Training connection profiles only; no implication of real SKU fit or availability. */
 export const trainingRegistry: ComponentRegistry = new Map([
+  ...stressTypes.map((type) => [type.id, type] as const),
   ...baseline,
   ...[...equipment].map(([id, entry]) => [id, entry.component] as const),
 ]);

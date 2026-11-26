@@ -1,4 +1,5 @@
 import { trainingCompositeHydraulics } from './component-types/composite-hydraulics';
+import { stressTypes } from './stress-profiles';
 import { equipmentRegistry } from './registry';
 import { trainingValveLaws } from './runtime-valves';
 import { trainingFloorProfiles } from '../simulation/floor';
@@ -16,6 +17,7 @@ export function assembleTemplateScenario(id: TemplateId | undefined, doc: Projec
   const fixedDarcyFactors: Record<string, number> = {};
   const cells: Record<string, SimulationScenario['fluid']['cells'][string]> = {};
   const fluids = new Map(system.hydraulicDomains.map((d) => [d.id, d.fluid]));
+  const load = system.components.some((c) => stressTypes.some((type) => type.id === c.typeId));
   const components = new Map(system.components.map((c) => [c.id, c]));
   const thermalDevices = system.hydraulicChannels.filter((c) => c.kind === 'source' && c.enabled);
   const storeChannels = new Map<string, { massKg: number; cellId: string }>();
@@ -30,10 +32,11 @@ export function assembleTemplateScenario(id: TemplateId | undefined, doc: Projec
       storeChannels.set(channel.id, { massKg, cellId });
       storage.push({ id: cellId, kind: variant, channelIds: [channel.id] });
     }
-    if (channel.kind === 'pipe') fixedDarcyFactors[channel.id] = .035;
+    if (load) resistance[channel.id] = { linearPaPerM3s: 2e7 };
+    else if (channel.kind === 'pipe') fixedDarcyFactors[channel.id] = .035;
     else resistance[channel.id] ??= { linearPaPerM3s: storeChannels.has(channel.id) ? 3e6 : 4e7 };
     if (channel.kind === 'source') pumps[channel.id] = { mode: 'fixed-speed',
-      points: [{ flowM3s: 0, headPa: 28_000 }, { flowM3s: id === 'floor-and-radiators' ? .0002 : .00013, headPa: 0 }] };
+      points: [{ flowM3s: 0, headPa: load ? 30000 : 28_000 }, { flowM3s: load ? .0006 : id === 'floor-and-radiators' ? .0002 : .00013, headPa: 0 }] };
     if (channel.kind === 'pump' && !pumps[channel.id]) {
       const params = components.get(owner ?? '')?.parameters;
       const headPa = typeof params?.maxHeadPa === 'number' ? params.maxHeadPa : 30000;
@@ -99,7 +102,8 @@ export function assembleTemplateScenario(id: TemplateId | undefined, doc: Projec
       return owner && roomId && variantOf(owner) === 'radiator' ? [{ roomId, waterCellId: c.id, uaWPerK: 85 }] : [];
     }),
   };
-  return { ok: true, diagnostics: [], value: {
+  return { ok: true, diagnostics: load ? [{ code: 'synthetic_benchmark', path: 'components', severity: 'warning',
+    message: 'Контрольная нагрузка: применяются синтетические характеристики испытательного стенда, не паспортные данные.' }] : [], value: {
     system, hydraulic: { ...composite.value, resistance, pumps, fixedDarcyFactors,
       valves: { ...trainingValveLaws(doc, system), ...composite.value.valves } },
     fluid: { cells, storage }, control, outdoorC: doc.environment.outdoorC,

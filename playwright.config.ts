@@ -6,6 +6,8 @@ const url = 'http://127.0.0.1:4173';
 export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   reporter: 'list',
+  // Packaged timing evidence must not compete with another Electron test process.
+  workers: webOnly ? undefined : 1,
   webServer: webOnly ? { command: 'npm run dev:web -- --host 127.0.0.1 --port 4173 --strictPort', url } : undefined,
   projects: [
     {
