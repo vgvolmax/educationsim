@@ -1,0 +1,22 @@
+[
+  {"id":"source","titleRu":"Источники тепла"},
+  {"id":"conveyance","titleRu":"Магистрали, стояки и трубы"},
+  {"id":"fittings","titleRu":"Соединения и заглушки"},
+  {"id":"manifolds","titleRu":"Коллекторы"},
+  {"id":"balancing","titleRu":"Балансировка и расходомеры"},
+  {"id":"isolation","titleRu":"Запорные и зональные клапаны"},
+  {"id":"directional","titleRu":"Направление, перепуск и RTL"},
+  {"id":"circulation","titleRu":"Насосы и прямые группы"},
+  {"id":"mixing","titleRu":"Подмес и смесительные узлы"},
+  {"id":"actuation","titleRu":"Приводы и термоголовки"},
+  {"id":"zone-sensing","titleRu":"Температурные датчики и контроллеры"},
+  {"id":"safety-controls","titleRu":"Ограничители и аварийные реле"},
+  {"id":"pressure","titleRu":"Давление и группа безопасности"},
+  {"id":"service","titleRu":"Воздух, дренаж и подпитка"},
+  {"id":"filtration","titleRu":"Фильтрация и очистка"},
+  {"id":"storage","titleRu":"Гидравлическое разделение и теплообмен"},
+  {"id":"measurement-radiators","titleRu":"Радиаторы и измерительные приборы"},
+  {"id":"mounting","titleRu":"Монтажные конструкции"},
+  {"id":"floor-installation","titleRu":"Материалы укладки пола"},
+  {"id":"floor-build-up","titleRu":"Слои и покрытия пола"}
+]

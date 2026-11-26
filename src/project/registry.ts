@@ -1,4 +1,11 @@
-import type { ComponentHydraulics, ComponentType, ControlPort, HydronicPort } from './types';
+import familyManifest from '../../content/equipment/families.json';
+import { accepts, define } from './component-types/definitions';
+import type { EquipmentDefinition } from './component-types/definitions';
+import { distribution } from './component-types/distribution';
+import { controls } from './component-types/controls';
+import { service } from './component-types/service';
+import { materials } from './component-types/materials';
+import type { ComponentHydraulics, ComponentType, ControlPort, Diagnostic, HydronicPort, Result } from './types';
 
 export type ComponentRegistry = ReadonlyMap<string, ComponentType>;
 
@@ -64,5 +71,40 @@ const trainingTypes: readonly ComponentType[] = [
   { id: 'training-temperature-sensor', category: 'equipment', ports: [signal('temperature', 'output', 'temperature')], defaultParameters: {} },
 ];
 
+const baseline = new Map(trainingTypes.map((type) => [type.id, type]));
+export const equipmentFamilies: readonly Readonly<{ id: string; titleRu: string }>[] = familyManifest;
+
+const equipment = new Map<string, EquipmentDefinition>();
+for (const spec of [...distribution, ...controls, ...service, ...materials]) {
+  const entry = define(spec, spec.id ? baseline.get(spec.id) : undefined);
+  if (equipment.has(entry.id)) throw new Error('Duplicate training profile: ' + entry.id);
+  equipment.set(entry.id, entry);
+}
+export const equipmentRegistry: ReadonlyMap<string, EquipmentDefinition> = equipment;
+
 /** Training connection profiles only; no implication of real SKU fit or availability. */
-export const trainingRegistry: ComponentRegistry = new Map(trainingTypes.map((type) => [type.id, type]));
+export const trainingRegistry: ComponentRegistry = new Map([
+  ...baseline,
+  ...[...equipment].map(([id, entry]) => [id, entry.component] as const),
+]);
+
+export function validateEquipmentSettings(
+  id: string, values: Readonly<Record<string, unknown>>,
+): Result<ComponentType['defaultParameters']> {
+  const entry = equipment.get(id);
+  if (!entry) return { ok: false, diagnostics: [{ code: 'unknown_equipment', severity: 'error', path: 'typeId',
+    message: 'Неизвестный профиль учебного оборудования.' }] };
+  const diagnostics: Diagnostic[] = [];
+  const validated = new Map<string, string | number | boolean>();
+  for (const [key, value] of Object.entries(values)) {
+    const known = Object.hasOwn(entry.settings, key);
+    const parameter = known ? entry.settings[key] : undefined;
+    if (parameter && accepts(parameter, value)) validated.set(key, value);
+    else diagnostics.push({ code: known ? 'equipment_parameter_range' : 'unknown_equipment_parameter',
+      severity: 'error', path: 'parameters.' + key, message: parameter
+        ? 'Значение не соответствует типу или диапазону: ' + parameter.titleRu
+        : 'Параметр не объявлен в учебном профиле.' });
+  }
+  const [first, ...rest] = diagnostics;
+  return first ? { ok: false, diagnostics: [first, ...rest] } : { ok: true, diagnostics: [], value: Object.fromEntries(validated) };
+}
