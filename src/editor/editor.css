@@ -1,0 +1,60 @@
+.editor { --ink: #183331; --teal: #155752; --copper: #a35135; --edge: #d3cbbc; --paper: #fbfaf5; color: var(--ink); }
+.editor h1, .editor h2, .editor p { margin: 0; }
+.work-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: 1rem;
+  padding: 1rem clamp(.8rem, 3vw, 2rem) 1.2rem; background: var(--paper); border-bottom: 1px solid var(--edge); }
+.work-header h1 { font-size: clamp(1.45rem, 3.4vw, 2.55rem); overflow-wrap: anywhere; color: var(--ink); }
+.work-header .eyebrow { border: 0; padding: 0 0 .22rem; font-size: .73rem; }
+.revision { font: .8rem/1.5 monospace; white-space: nowrap; color: #5b584d; }
+.work-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; padding: .7rem clamp(.8rem, 3vw, 2rem);
+  border-bottom: 1px solid var(--edge); background: #eeeae0; }
+.editor button, .editor select, .editor input:not([type=checkbox]) {
+  min-height: 2.3rem; border: 1px solid #a7a395; border-radius: .22rem; color: var(--ink); background: var(--paper); padding: .3rem .65rem; }
+.editor button:hover:not(:disabled) { border-color: var(--teal); }
+.editor button[aria-pressed=true] { border-color: var(--teal); text-decoration: underline; background: #e0ede6; }
+.editor input[type=checkbox] { accent-color: var(--teal); }
+.work-body { display: grid; grid-template-columns: minmax(9rem, 14rem) minmax(0, 1fr) minmax(12rem, 17rem); align-items: stretch;
+  min-height: 65vh; }
+.work-tree, .work-panel { display: flex; align-items: stretch; flex-direction: column; gap: .5rem; padding: .9rem;
+  background: var(--paper); min-width: 0; overflow-wrap: anywhere; }
+.work-tree { border-right: 1px solid var(--edge); }
+.work-panel { border-left: 1px solid var(--edge); }
+.work-tree h2, .work-panel h2 { margin: .5rem 0 .08rem; font: bold .79rem/1.3 monospace; text-transform: uppercase; color: #5e4639; }
+.work-tree button, .work-panel > button { text-align: left; }
+.work-tree p, .work-panel p { font-size: .875rem; }
+.item-number { margin-right: .5rem; color: var(--teal); font-family: monospace; }
+.room-fields { display: grid; gap: .45rem; }
+.room-fields label { display: grid; gap: .15rem; font-size: .88rem; }
+.room-fields select, .room-fields input { width: 100%; min-width: 0; box-sizing: border-box; }
+.room-fields button { justify-self: start; }
+.pick-port { padding: .55rem; background: #eef4eb; border-left: 3px solid var(--teal); }
+.editor-error { background: #fce9e1; border-left: 3px solid var(--copper); padding: .65rem 1rem; }
+.drawing { align-self: start; padding: .8rem min(2vw, 1.2rem); }
+.drawing svg { display: block; width: 100%; min-height: 18rem; max-height: min(68vh, 56rem); background: #fdfbf4; border: 1px solid var(--edge); }
+.drawing p { margin: .42rem 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: .28rem; font-size: .78rem; }
+.layout-hint { margin-left: auto; }
+.drawing text { fill: var(--ink); font: 600 .16px/1 "Segoe UI", system-ui, sans-serif; pointer-events: none; }
+.drawing .room-name { stroke: #fdfbf4; stroke-width: .035; paint-order: stroke; }
+.drawing text.equipment-index { fill: #fff; text-anchor: middle; dominant-baseline: central; font-size: .14px; }
+.drawing .room { fill: #e9e6d173; stroke: #696b5b; stroke-width: .04; cursor: pointer; }
+.drawing .room.selected { stroke: var(--teal); stroke-width: .07; }
+.drawing .plan-link { fill: none; stroke-width: .045; }
+.drawing .water { stroke: var(--teal); }
+.drawing .control { stroke: var(--copper); stroke-dasharray: .07 .04; }
+.drawing .approximate { stroke-dasharray: .12 .06; }
+.plan-equipment { cursor: pointer; fill: var(--teal); }
+.plan-equipment .selected { stroke: var(--copper); stroke-width: .076; }
+.water-key { color: var(--teal); }
+.control-key { color: var(--copper); }
+.link-row { display: flex; gap: .5rem; align-items: baseline; justify-content: space-between; border-top: 1px solid var(--edge); font-size: .85rem; }
+.link-row button { font-size: .78rem; }
+@media (max-width: 850px) {
+  .work-body { grid-template-columns: minmax(9rem, 12rem) minmax(0, 1fr); }
+  .work-panel { grid-column: 1 / -1; border-top: 1px solid var(--edge); }
+}
+@media (max-width: 510px) {
+  .work-header { grid-template-columns: 1fr auto; align-items: start; }
+  .work-header > div { grid-row: 2; grid-column: 1 / -1; }
+  .work-body { display: flex; flex-direction: column; }
+  .drawing { order: -1; align-self: stretch; }
+  .drawing svg { min-height: 14rem; }
+}
