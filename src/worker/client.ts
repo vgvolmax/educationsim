@@ -24,8 +24,8 @@ export function createSimulationClient(
   const stop = () => { child?.terminate(); child = undefined; awaiting.clear(); };
   function stall(code: string, message: string): void {
     stop();
-    state = { ...state, mode: 'stalled', view: state.view && { ...state.view, mode: 'paused', stale: true },
-      diagnostics: [{ code, path: 'worker', severity: 'error', message }] };
+    const diagnostics: Diagnostic[] = [{ code, path: 'worker', severity: 'error', message }];
+    state = { ...state, mode: 'stalled', view: state.view && { ...state.view, mode: 'paused', stale: true, diagnostics }, diagnostics };
   }
   const timer = setInterval(() => {
     if (!child) return;
