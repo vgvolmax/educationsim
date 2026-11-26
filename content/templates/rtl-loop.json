@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "projectId": "rtl-loop",
+  "title": "Одиночная петля с RTL",
+  "revision": 0,
+  "catalogReleaseId": "training-v1",
+  "modelVersion": "training-v1",
+  "environment": {
+    "outdoorC": 0,
+    "belowFloorC": 18,
+    "fluid": "water"
+  },
+  "rooms": [
+    {
+      "id": "room-a",
+      "name": "Учебная комната",
+      "level": 0,
+      "heightM": 2.7,
+      "outline": [
+        {
+          "x": 0,
+          "z": 0
+        },
+        {
+          "x": 6,
+          "z": 0
+        },
+        {
+          "x": 6,
+          "z": 4
+        },
+        {
+          "x": 0,
+          "z": 4
+        }
+      ],
+      "wallLossWPerK": 45,
+      "floorLossWPerK": 11,
+      "airCapacityJPerK": 90000,
+      "airSetpointC": 21,
+      "surfaceLimitC": 29,
+      "floorFinishId": "tile",
+      "exclusions": [],
+      "openings": []
+    }
+  ],
+  "components": [
+    {
+      "id": "source",
+      "typeId": "training-heat-source",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "level": 0,
+      "roomId": null,
+      "catalogSnapshotId": null,
+      "parameters": {}
+    },
+    {
+      "id": "rtl",
+      "typeId": "training-rtl",
+      "position": {
+        "x": 1,
+        "y": 0,
+        "z": 0
+      },
+      "level": 0,
+      "roomId": null,
+      "catalogSnapshotId": null,
+      "parameters": {}
+    },
+    {
+      "id": "return-joint",
+      "typeId": "training-coupling",
+      "position": {
+        "x": 1,
+        "y": 0,
+        "z": 0.4
+      },
+      "level": 0,
+      "roomId": null,
+      "catalogSnapshotId": null,
+      "parameters": {}
+    }
+  ],
+  "hydronicLinks": [
+    {
+      "id": "pipe-a",
+      "from": {
+        "componentId": "source",
+        "portId": "supply"
+      },
+      "to": {
+        "componentId": "rtl",
+        "portId": "in"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    },
+    {
+      "id": "rtl-return",
+      "from": {
+        "componentId": "rtl",
+        "portId": "out"
+      },
+      "to": {
+        "componentId": "return-joint",
+        "portId": "in"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    },
+    {
+      "id": "source-return",
+      "from": {
+        "componentId": "return-joint",
+        "portId": "out"
+      },
+      "to": {
+        "componentId": "source",
+        "portId": "return"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    }
+  ],
+  "controlLinks": [],
+  "loopRoutes": [
+    {
+      "id": "loop-a",
+      "roomId": "room-a",
+      "linkId": "pipe-a",
+      "kind": "manual",
+      "spacingM": 0.15,
+      "points": [
+        {
+          "x": 0.2,
+          "y": 0,
+          "z": 0.2
+        },
+        {
+          "x": 5.5,
+          "y": 0,
+          "z": 0.2
+        },
+        {
+          "x": 5.5,
+          "y": 0,
+          "z": 0.35
+        },
+        {
+          "x": 0.2,
+          "y": 0,
+          "z": 0.35
+        }
+      ]
+    }
+  ],
+  "appliedCatalogSnapshots": [],
+  "initialConditions": {
+    "airCByRoomId": {
+      "room-a": 20
+    },
+    "waterC": 20,
+    "gaugePressurePa": 100000
+  },
+  "viewPreferences": {
+    "mode": "2d",
+    "level": 0
+  }
+}

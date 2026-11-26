@@ -1,0 +1,402 @@
+{
+  "schemaVersion": 1,
+  "projectId": "two-floors-separator",
+  "title": "Два этажа с гидравлическим разделителем",
+  "revision": 0,
+  "catalogReleaseId": "training-v1",
+  "modelVersion": "training-v1",
+  "environment": {
+    "outdoorC": 0,
+    "belowFloorC": 18,
+    "fluid": "water"
+  },
+  "rooms": [
+    {
+      "id": "room-a",
+      "name": "Учебная комната",
+      "level": 0,
+      "heightM": 2.7,
+      "outline": [
+        {
+          "x": 0,
+          "z": 0
+        },
+        {
+          "x": 6,
+          "z": 0
+        },
+        {
+          "x": 6,
+          "z": 4
+        },
+        {
+          "x": 0,
+          "z": 4
+        }
+      ],
+      "wallLossWPerK": 45,
+      "floorLossWPerK": 11,
+      "airCapacityJPerK": 90000,
+      "airSetpointC": 21,
+      "surfaceLimitC": 29,
+      "floorFinishId": "tile",
+      "exclusions": [],
+      "openings": []
+    },
+    {
+      "id": "room-up",
+      "name": "Верхний этаж",
+      "level": 1,
+      "heightM": 2.7,
+      "outline": [
+        {
+          "x": 0,
+          "z": 0
+        },
+        {
+          "x": 6,
+          "z": 0
+        },
+        {
+          "x": 6,
+          "z": 4
+        },
+        {
+          "x": 0,
+          "z": 4
+        }
+      ],
+      "wallLossWPerK": 45,
+      "floorLossWPerK": 11,
+      "airCapacityJPerK": 90000,
+      "airSetpointC": 21,
+      "surfaceLimitC": 29,
+      "floorFinishId": "tile",
+      "exclusions": [],
+      "openings": []
+    }
+  ],
+  "components": [
+    {
+      "id": "source",
+      "typeId": "training-heat-source",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "level": 0,
+      "roomId": null,
+      "catalogSnapshotId": null,
+      "parameters": {}
+    },
+    {
+      "id": "manifold",
+      "typeId": "training-manifold-two-way",
+      "position": {
+        "x": 1.5,
+        "y": 0,
+        "z": 0.3
+      },
+      "level": 0,
+      "roomId": "room-a",
+      "catalogSnapshotId": null,
+      "parameters": {}
+    },
+    {
+      "id": "storage",
+      "typeId": "training-hydraulic-separator",
+      "position": {
+        "x": 0.5,
+        "y": 0,
+        "z": 0.2
+      },
+      "level": 0,
+      "roomId": null,
+      "catalogSnapshotId": null,
+      "parameters": {}
+    },
+    {
+      "id": "secondary-pump",
+      "typeId": "training-direct-pump-group",
+      "position": {
+        "x": 1,
+        "y": 0,
+        "z": 0.3
+      },
+      "level": 0,
+      "roomId": null,
+      "catalogSnapshotId": null,
+      "parameters": {}
+    },
+    {
+      "id": "supply-riser",
+      "typeId": "training-riser",
+      "position": {
+        "x": 1.7,
+        "y": 0,
+        "z": 0.3
+      },
+      "level": 0,
+      "roomId": null,
+      "catalogSnapshotId": null,
+      "parameters": {}
+    },
+    {
+      "id": "return-riser",
+      "typeId": "training-riser",
+      "position": {
+        "x": 1.7,
+        "y": 0,
+        "z": 0.6
+      },
+      "level": 0,
+      "roomId": null,
+      "catalogSnapshotId": null,
+      "parameters": {}
+    },
+    {
+      "id": "upper-manifold",
+      "typeId": "training-manifold-one-way",
+      "position": {
+        "x": 2,
+        "y": 3,
+        "z": 0.4
+      },
+      "level": 1,
+      "roomId": "room-up",
+      "catalogSnapshotId": null,
+      "parameters": {}
+    }
+  ],
+  "hydronicLinks": [
+    {
+      "id": "primary-feed",
+      "from": {
+        "componentId": "source",
+        "portId": "supply"
+      },
+      "to": {
+        "componentId": "storage",
+        "portId": "primary-in"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    },
+    {
+      "id": "primary-return",
+      "from": {
+        "componentId": "storage",
+        "portId": "primary-out"
+      },
+      "to": {
+        "componentId": "source",
+        "portId": "return"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    },
+    {
+      "id": "secondary-feed",
+      "from": {
+        "componentId": "storage",
+        "portId": "secondary-out"
+      },
+      "to": {
+        "componentId": "secondary-pump",
+        "portId": "in"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    },
+    {
+      "id": "secondary-delivery",
+      "from": {
+        "componentId": "secondary-pump",
+        "portId": "out"
+      },
+      "to": {
+        "componentId": "manifold",
+        "portId": "feed"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    },
+    {
+      "id": "secondary-return",
+      "from": {
+        "componentId": "manifold",
+        "portId": "return"
+      },
+      "to": {
+        "componentId": "storage",
+        "portId": "secondary-in"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    },
+    {
+      "id": "pipe-a",
+      "from": {
+        "componentId": "manifold",
+        "portId": "supply-1"
+      },
+      "to": {
+        "componentId": "manifold",
+        "portId": "return-1"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    },
+    {
+      "id": "riser-feed",
+      "from": {
+        "componentId": "manifold",
+        "portId": "supply-2"
+      },
+      "to": {
+        "componentId": "supply-riser",
+        "portId": "in"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    },
+    {
+      "id": "riser-upper-feed",
+      "from": {
+        "componentId": "supply-riser",
+        "portId": "out"
+      },
+      "to": {
+        "componentId": "upper-manifold",
+        "portId": "feed"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    },
+    {
+      "id": "riser-upper-return",
+      "from": {
+        "componentId": "upper-manifold",
+        "portId": "return"
+      },
+      "to": {
+        "componentId": "return-riser",
+        "portId": "in"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    },
+    {
+      "id": "riser-return",
+      "from": {
+        "componentId": "return-riser",
+        "portId": "out"
+      },
+      "to": {
+        "componentId": "manifold",
+        "portId": "return-2"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    },
+    {
+      "id": "pipe-b",
+      "from": {
+        "componentId": "upper-manifold",
+        "portId": "supply-1"
+      },
+      "to": {
+        "componentId": "upper-manifold",
+        "portId": "return-1"
+      },
+      "points": [],
+      "materialId": "training-pipe",
+      "innerDiameterM": 0.012
+    }
+  ],
+  "controlLinks": [],
+  "loopRoutes": [
+    {
+      "id": "loop-a",
+      "roomId": "room-a",
+      "linkId": "pipe-a",
+      "kind": "manual",
+      "spacingM": 0.15,
+      "points": [
+        {
+          "x": 0.2,
+          "y": 0,
+          "z": 0.2
+        },
+        {
+          "x": 5.5,
+          "y": 0,
+          "z": 0.2
+        },
+        {
+          "x": 5.5,
+          "y": 0,
+          "z": 0.35
+        },
+        {
+          "x": 0.2,
+          "y": 0,
+          "z": 0.35
+        }
+      ]
+    },
+    {
+      "id": "loop-b",
+      "roomId": "room-up",
+      "linkId": "pipe-b",
+      "kind": "manual",
+      "spacingM": 0.15,
+      "points": [
+        {
+          "x": 0.2,
+          "y": 3,
+          "z": 0.5
+        },
+        {
+          "x": 5.5,
+          "y": 3,
+          "z": 0.5
+        },
+        {
+          "x": 5.5,
+          "y": 3,
+          "z": 0.65
+        },
+        {
+          "x": 0.2,
+          "y": 3,
+          "z": 0.65
+        }
+      ]
+    }
+  ],
+  "appliedCatalogSnapshots": [],
+  "initialConditions": {
+    "airCByRoomId": {
+      "room-a": 20,
+      "room-up": 20
+    },
+    "waterC": 20,
+    "gaugePressurePa": 100000
+  },
+  "viewPreferences": {
+    "mode": "2d",
+    "level": 0
+  }
+}
