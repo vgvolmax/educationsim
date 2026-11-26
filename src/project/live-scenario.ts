@@ -10,7 +10,9 @@ export function compileLiveScenario(project: ProjectDocument, preset?: TemplateI
   if (!project.hydronicLinks.length) return { ok: false, diagnostics: [{
     code: 'empty_run', path: 'hydronicLinks', severity: 'error', message: 'Для прогона соберите замкнутый водяной контур.',
   }] };
-  if (project.components.some((component) => component.catalogSnapshotId)) return { ok: false, diagnostics: [{
+  const knownTraining = new Set(project.appliedCatalogSnapshots.filter((snapshot) => snapshot.basis === 'training' &&
+    Object.keys(snapshot.parameters).length === 0).map(({ id }) => id));
+  if (project.components.some((component) => component.catalogSnapshotId && !knownTraining.has(component.catalogSnapshotId))) return { ok: false, diagnostics: [{
     code: 'catalog_live_profile', severity: 'error', path: 'appliedCatalogSnapshots',
     message: 'Паспортные компоненты требуют отдельного подтверждённого расчётного профиля.',
   }] };

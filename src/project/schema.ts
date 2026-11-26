@@ -49,6 +49,7 @@ const snapshot = z.strictObject({
   id, productId: id, typeId: id,
   catalogReleaseId: id,
   basis: z.enum(['manufacturer', 'training', 'reference']),
+  catalogCard: z.strictObject({ key: z.string().min(1).max(200), context: z.enum(['floor', 'heating', 'radiator', 'service']).optional(), article: z.string().max(240), title: z.string().min(1).max(700) }).optional(),
   sourceUrls: z.array(z.url({ protocol: /^https$/ }).max(2048)).max(32),
   parameters,
 });

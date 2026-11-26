@@ -34,6 +34,11 @@ function touches(link: { from: { componentId: string }; to: { componentId: strin
   return link.from.componentId === componentId || link.to.componentId === componentId;
 }
 
+function validTeachingSnapshot(project: ProjectDocument, snapshot: NonNullable<ReplaceComponentCommand['catalogSnapshot']>, typeId: string): boolean {
+  return snapshot.basis === 'training' && snapshot.typeId === typeId && !!snapshot.catalogCard &&
+    Object.keys(snapshot.parameters).length === 0 && !project.appliedCatalogSnapshots.some(({ id }) => id === snapshot.id);
+}
+
 export function previewReplacement(
   project: ProjectDocument, command: ReplaceComponentCommand, registry: ComponentRegistry,
 ): Result<ReplacementPlan> {
@@ -44,9 +49,18 @@ export function previewReplacement(
   if (!original) return failure('missing_component', 'Компонент не найден.');
   const type = registry.get(command.typeId);
   if (!type) return failure('missing_type', 'Тип компонента не найден.');
-  if (type.id === original.typeId) return failure('same_component_type', 'Выбран тот же тип компонента.');
+  if (command.catalogSnapshot && !validTeachingSnapshot(project, command.catalogSnapshot, type.id)) return failure('catalog_snapshot', 'Неподходящий учебный снимок каталога.');
+  if (type.id === original.typeId && !command.catalogSnapshot) return failure('same_component_type', 'Выбран тот же тип компонента.');
+  if (command.catalogSnapshot?.catalogCard?.context === 'radiator') {
+    const loops = new Set(project.loopRoutes.map((route) => route.linkId));
+    if (project.hydronicLinks.some((link) => loops.has(link.id) && touches(link, original.id))) {
+      return failure('catalog_context_mismatch', 'Радиаторная позиция не может заменить элемент подключённой петли пола.');
+    }
+  }
 
-  const component = { ...original, typeId: type.id, catalogSnapshotId: null, parameters: { ...type.defaultParameters } };
+
+  const component = { ...original, typeId: type.id, catalogSnapshotId: command.catalogSnapshot?.id ?? null,
+    parameters: { ...(type.id === original.typeId ? original.parameters : type.defaultParameters) } };
   const before = project.components.map((item) => item.id === component.id ? component : item);
   const draft: ProjectDocument = {
     ...project, components: before,
@@ -92,7 +106,10 @@ function applyEdit(project: ProjectDocument, command: ProjectEdit, registry: Com
     case 'add_component':
       if (project.components.some(({ id }) => id === command.component.id)) return failure('duplicate_id', 'Этот идентификатор компонента уже используется.');
       if (!registry.has(command.component.typeId)) return failure('missing_type', 'Тип компонента не найден.');
-      return success({ ...project, components: [...project.components, command.component] });
+      if (command.catalogSnapshot && (!validTeachingSnapshot(project, command.catalogSnapshot, command.component.typeId) ||
+          command.component.catalogSnapshotId !== command.catalogSnapshot.id)) return failure('catalog_snapshot', 'Неподходящий учебный снимок каталога.');
+      return success({ ...project, components: [...project.components, command.component],
+        appliedCatalogSnapshots: command.catalogSnapshot ? [...project.appliedCatalogSnapshots, command.catalogSnapshot] : project.appliedCatalogSnapshots });
     case 'remove_component': {
       if (!project.components.some(({ id }) => id === command.componentId)) return failure('missing_component', 'Компонент не найден.');
       const related = (link: ProjectDocument['hydronicLinks'][number] | ProjectDocument['controlLinks'][number]) => touches(link, command.componentId);
@@ -140,7 +157,8 @@ export function applyProjectCommand(
       if (change.action === 'detach') (change.domain === 'hydronic' ? hydronic : control).add(change.linkId);
     }
     const component = plan.value.component;
-    draft = detach({ ...project, components: project.components.map((item) => item.id === component.id ? component : item) }, hydronic, control);
+    draft = detach({ ...project, components: project.components.map((item) => item.id === component.id ? component : item),
+      appliedCatalogSnapshots: command.catalogSnapshot ? [...project.appliedCatalogSnapshots, command.catalogSnapshot] : project.appliedCatalogSnapshots }, hydronic, control);
   } else {
     const edits = command.kind === 'batch' ? command.edits : [command];
     if (edits.length === 0 || edits.length > 128) return failure('invalid_batch', 'В группе должно быть от 1 до 128 действий.');

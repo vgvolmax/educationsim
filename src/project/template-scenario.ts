@@ -8,7 +8,8 @@ import type { ProjectDocument, Result } from './types';
 import type { TemplateId } from './templates';
 
 export function assembleTemplateScenario(id: TemplateId | undefined, doc: ProjectDocument, system: CompiledSystem): Result<SimulationScenario> {
-  const composite = trainingCompositeHydraulics(system);
+  const composite = trainingCompositeHydraulics(system, new Set(doc.appliedCatalogSnapshots.filter((s) =>
+    s.basis === 'training' && Object.keys(s.parameters).length === 0).map(({ id }) => id)));
   if (!composite.ok) return composite;
   const resistance = { ...composite.value.resistance };
   const pumps = { ...composite.value.pumps };
