@@ -87,7 +87,7 @@ export function openSimulation(input: SimulationScenario): Result<SimulationEngi
   }
   const initial = (): SimulationState => ({
     projectId: system.projectId, projectRevision: system.projectRevision, tick: 0, powered: true,
-    manual: {}, faults: emptyFaultState(), control: null, sources: {},
+    manual: {}, valveOpenings: {}, faults: emptyFaultState(), control: null, sources: {},
     fluid: { cells: structuredClone(scenario.fluid.cells), fluidProfileByCell: Object.fromEntries(profileByCell) },
     hydraulics: null, building: null, energy: null, health: 'normal', pressure: {}, pressureReliefJ: 0,
   });
@@ -100,10 +100,19 @@ export function openSimulation(input: SimulationScenario): Result<SimulationEngi
     if (state.health === 'stopped') return failure('stopped_engine', 'simulation', 'Расчёт остановлен на границе модели.');
     if (commands.length > 128) return failure('invalid_engine_command', 'commands', 'Слишком много команд за один тик.');
     const manual = new Map(Object.entries(state.manual)), resets: string[] = [], faultCommands: FaultCommand[] = [];
+    const valveOpenings = new Map(Object.entries(state.valveOpenings));
     const service: ServiceExchange[] = [];
     let powered = state.powered;
     for (const command of commands) {
       if (command.kind === 'manual' && actuatorIds.has(command.actuatorId) && typeof command.demand === 'boolean') manual.set(command.actuatorId, command.demand);
+      else if (command.kind === 'set-valve') {
+        const configured = scenario.hydraulic.valves?.[command.channelId];
+        if (!configured || !('opening' in configured) || !['balance', 'shutoff', 'two-way'].includes(configured.kind) ||
+            !Number.isFinite(command.opening) || command.opening < 0 || command.opening > 1) {
+          return failure('invalid_engine_command', command.channelId, 'Нет совместимого ручного клапана или допустимого открытия.');
+        }
+        valveOpenings.set(command.channelId, command.opening);
+      }
       else if (command.kind === 'power' && typeof command.powered === 'boolean') powered = command.powered;
       else if (command.kind === 'reset-limit' && resetIds.has(command.limiterId)) resets.push(command.limiterId);
       else if (command.kind === 'fault') faultCommands.push(command.command);
@@ -130,7 +139,8 @@ export function openSimulation(input: SimulationScenario): Result<SimulationEngi
     diagnostics.push(...controls.diagnostics);
     const control = applyJammedActuators(controls.value, faults.value);
     const valveSettings: NonNullable<HydraulicInputsLocal['valves']> = Object.fromEntries([
-      ...Object.entries(scenario.hydraulic.valves ?? {}),
+      ...Object.entries(scenario.hydraulic.valves ?? {}).map(([id, valve]) =>
+        [id, 'opening' in valve && valveOpenings.has(id) ? { ...valve, opening: valveOpenings.get(id)! } : valve] as const),
       ...Object.entries(scenario.control.zoneChannels ?? {}).flatMap(([id, ids]) =>
         ids.map((channelId) => [channelId, { kind: 'zone', opening: control.actuators[id]!.opening }] as const)),
     ]);
@@ -175,7 +185,7 @@ export function openSimulation(input: SimulationScenario): Result<SimulationEngi
     const pressure = stagePressure(scenario, state, fluid, hydraulics.value, cellDomains, transfers.value.admitted);
     if (!pressure.ok) return pressure;
     return { ok: true, value: { projectId: system.projectId, projectRevision: system.projectRevision, tick, powered,
-      manual: Object.fromEntries(manual), faults: faults.value, control, ...pressure.value,
+      manual: Object.fromEntries(manual), valveOpenings: Object.fromEntries(valveOpenings), faults: faults.value, control, ...pressure.value,
       building: building ? { ...building, fluid: pressure.value.fluid } : null, sources: sourceOutputs,
       energy: thermal.value.energy }, diagnostics: [...diagnostics, ...pressure.diagnostics] };
   }

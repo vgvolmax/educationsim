@@ -5,6 +5,8 @@ import { equipmentRegistry, trainingRegistry } from '../project/registry';
 import type { PortEndpoint, ProjectDocument, Room } from '../project/types';
 import { parseRussianDecimal } from '../project/units';
 import { Inspector, StartConditions } from './Inspector';
+import { SimulationPanel } from './SimulationPanel';
+import type { TemplateId } from '../project/templates';
 import { PortInspector } from './PortInspector';
 import { RouteTools } from './RouteTools';
 import type { RouteOverlay } from './RouteTools';
@@ -29,7 +31,7 @@ function RoomForm({ room, ctl }: { room: Room; ctl: ProjectController }) {
   </form>;
 }
 
-export function Editor({ ctl, project, onHome }: { ctl: ProjectController; project: ProjectDocument; onHome(): void }) {
+export function Editor({ ctl, project, preset, onHome }: { ctl: ProjectController; project: ProjectDocument; preset?: TemplateId; onHome(): void }) {
   const [level, setLevel] = useState(project.viewPreferences.level);
   const [selected, setSelected] = useState<string | null>(null);
   const [pending, setPending] = useState<PortEndpoint | null>(null);
@@ -122,7 +124,13 @@ export function Editor({ ctl, project, onHome }: { ctl: ProjectController; proje
           <span className="item-number">{i + 1}</span>{equipmentRegistry.get(c.typeId)?.titleRu ?? c.typeId}
         </button>)}
       </aside>
+      <div className="editor-center">
       <Schematic project={project} level={level} selected={selected} onSelect={setSelected} water={water} control={control} overlay={overlay.revision === project.revision ? overlay : undefined} />
+        <SimulationPanel project={project} preset={preset} onFocus={(id) => {
+          const focus = project.components.find((c) => c.id === id);
+          if (focus) { setLevel(focus.level); setSelected(id); setOverlay({}); }
+        }} />
+      </div>
       <section className="work-panel" aria-label="Монтаж и свойства">
         {room && <><h2>{room.name}</h2><RoomForm room={room} ctl={ctl} /><StartConditions room={room} project={project} ctl={ctl} /></>}
         {component && <><PortInspector project={project} component={component} pending={pending} onPick={pickPort} />

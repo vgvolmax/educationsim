@@ -29,6 +29,7 @@ export type SimulationScenario = {
   outdoorC: number;
 };
 export type SimulationCommand =
+  | { kind: 'set-valve'; channelId: string; opening: number }
   | { kind: 'manual'; actuatorId: string; demand: boolean }
   | { kind: 'power'; powered: boolean }
   | { kind: 'fault'; command: FaultCommand }
@@ -37,7 +38,7 @@ export type SimulationCommand =
 type SuccessfulSource = Extract<ReturnType<typeof regulateSource>, { ok: true }>['value'];
 export type SimulationState = {
   projectId: string; projectRevision: number; tick: number; powered: boolean;
-  manual: Readonly<Record<string, boolean>>; faults: FaultState; control: ControlState | null;
+  manual: Readonly<Record<string, boolean>>; valveOpenings: Readonly<Record<string, number>>; faults: FaultState; control: ControlState | null;
   fluid: Pick<FluidThermalState, 'cells' | 'fluidProfileByCell'>; hydraulics: HydraulicSnapshot | null;
   building: BuildingState | null; sources: Record<string, SuccessfulSource>;
   energy: FluidThermalState['energy'] | null;
