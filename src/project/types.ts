@@ -35,6 +35,7 @@ export type ComponentType = {
   ports: readonly PortDefinition[];
   category: 'equipment' | 'adapter';
   defaultParameters: ComponentInstance['parameters'];
+  hydraulics?: ComponentHydraulics;
 };
 
 type NamedCommand = { commandId: string };
@@ -51,3 +52,22 @@ export type ReplaceComponentCommand = NamedCommand & {
 };
 export type ProjectCommand = ProjectEdit | ReplaceComponentCommand |
   (NamedCommand & { kind: 'batch'; edits: readonly ProjectEdit[] });
+
+/** Training/network metadata describes internal junctions, not catalog claims. */
+export type ComponentHydraulics = {
+  portNodes: Readonly<Record<string, string>>;
+  channels: readonly InternalHydraulicChannel[];
+  pressureReference?: string;
+  fluids?: readonly {
+    node: string;
+    selection: 'project-default' | { kindParameter: string; concentrationParameter: string };
+  }[];
+  heatExchange?: { primary: string; secondary: string; uaParameter: string };
+};
+
+export type InternalHydraulicChannel = {
+  id: string;
+  from: string;
+  to: string;
+  kind: 'source' | 'pump' | 'passive' | 'exchanger';
+};

@@ -88,11 +88,13 @@
 
 **После:** A02–A03. **Файлы:** `src/project/geometry.ts`, `src/project/routing.ts`, `tests/project/routing.test.ts`, `tests/fixtures/projects/orthogonal-room.json`.
 
-- [ ] Написать `both_route_styles_work_in_reference_rectangle`, `l_room_serpentine_respects_zones`, `routes_avoid_keepouts`, `manual_route_requires_explicit_replacement`, `short_radius_and_crossing_are_reported`, `levels_support_riser`, `max_density_request_is_cancellable_and_preserves_route`. Использовать предельную комнату и шаг 50 мм, проверить диагностику бюджета и отсутствие перезаписи принятой трассы.
-- [ ] Реализовать расчёт простой ортогональной комнаты, вырезов, запретных зон, маршрутов, фактической длины с подводками и переходами уровней. Вынести автопрокладку в Worker и проверять лимиты до расчёта. Игнорировать устаревший результат после отмены или смены ревизии. Для перекрытий и слишком малого радиуса возвращать диагностику с локализацией. Места пересечения шва отмечать защитной гильзой или предупреждением.
-- [ ] Запустить `npm run test -- tests/project/routing.test.ts`. Зафиксировать `feat: generate and validate floor loop routes`.
+- [x] Написать `both_route_styles_work_in_reference_rectangle`, `l_room_serpentine_respects_zones`, `routes_avoid_keepouts`, `manual_route_requires_explicit_replacement`, `short_radius_and_crossing_are_reported`, `levels_support_riser`, `max_density_request_is_cancellable_and_preserves_route`. Использовать предельную комнату и шаг 50 мм, проверить диагностику бюджета и отсутствие перезаписи принятой трассы.
+- [x] Реализовать расчёт простой ортогональной комнаты, вырезов, запретных зон, маршрутов, фактической длины с подводками и переходами уровней. Вынести автопрокладку в Worker и проверять лимиты до расчёта. Игнорировать устаревший результат после отмены или смены ревизии. Для перекрытий и слишком малого радиуса возвращать диагностику с локализацией. Места пересечения шва отмечать защитной гильзой или предупреждением.
+- [x] Запустить `npm run test -- tests/project/routing.test.ts`. Зафиксировать `feat: generate and validate floor loop routes`.
 
 [Контракт расчёта трассы](../specs/2026-11-26-routing-contract.md).
+
+Подтверждение A04: [PR #8](https://github.com/vgvolmax/educationsim/pull/8), [браузерная проверка Worker и офлайн-проверка оболочки Windows](https://github.com/vgvolmax/educationsim/actions/runs/45858190457).
 
 ## Этап B. Расчётное ядро без UI
 
@@ -103,6 +105,8 @@
 - [ ] Создать `compiles_two_parallel_loops`, `blocks_open_operating_port`, `isolated_disabled_branch_has_zero_flow`, `heat_exchanger_keeps_fluid_domains_separate`.
 - [ ] Раскрывать вложенные узлы, каналы, порты и карту происхождения. Назначить опорные узлы, тепловые связи и опорный профиль жидкости. Компилятор отличает блокирующую ошибку от допустимого учебного предупреждения.
 - [ ] Запустить `npm run test -- tests/simulation/compile.test.ts`. Зафиксировать `feat: compile projects to calculation networks`.
+
+[Контракт расчётной сети](../specs/2026-11-26-simulation-network-contract.md).
 
 ### B02. Рассчитать гидравлическую сеть и рабочую точку насоса
 
