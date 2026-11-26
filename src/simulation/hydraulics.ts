@@ -12,6 +12,7 @@ import type { ChannelOrigin, CompiledSystem, HydraulicChannel, HydraulicDomain, 
 export type HydraulicInputs = {
   resistance: Readonly<Record<string, ResistanceProfile>>;
   pumps?: Readonly<Record<string, PumpInput>>;
+  resistanceMultipliers?: Readonly<Record<string, number>>;
   fixedDarcyFactors?: Readonly<Record<string, number>>;
   closedChannels?: readonly string[];
   valves?: Readonly<Record<string, ValveInput>>;
@@ -58,7 +59,8 @@ function channelLaw(channel: HydraulicChannel, domain: HydraulicDomain, inputs: 
   const specified = supplied ?? (channel.kind === 'pipe' && factor !== undefined ? pipeResistance(channel, domain.fluid, factor) : null);
   const drive = input && input.mode !== 'off';
   let resistance = specified ? makeResistance(specified) : drive || valve?.mode === 'regulator' ? zeroResistance : null;
-  if (resistance && valve?.mode === 'factor') resistance = scaleResistance(resistance, valve.factor);
+  const multiplier = (inputs.resistanceMultipliers?.[channel.id] ?? 1) * (valve?.mode === 'factor' ? valve.factor : 1);
+  if (resistance && multiplier !== 1) resistance = scaleResistance(resistance, multiplier);
   if (!resistance) return issue('invalid_resistance', channel.id, 'Нужно положительное сопротивление или явно заданный профиль трубы.');
   if (!input || input.mode === 'off') {
     return { channel, resistance, ...(input && { off: input }), ...(valve && { valve: valveLaw(valve, resistance) }) };
@@ -108,7 +110,8 @@ export function solveHydraulics(system: CompiledSystem, inputs: HydraulicInputs)
   const diagnostics: Diagnostic[] = [];
   const maxIterations = inputs.maxIterations ?? 65;
   if (!Number.isInteger(maxIterations) || maxIterations < 0 || maxIterations > 100 ||
-      [...closed].some((id) => !channelMap.has(id))) return failure(issue('invalid_hydraulic_inputs', '', 'Некорректные параметры расчёта.'));
+      [...closed].some((id) => !channelMap.has(id)) || Object.entries(inputs.resistanceMultipliers ?? {}).some(
+        ([id, multiplier]) => !channelMap.has(id) || !Number.isFinite(multiplier) || multiplier <= 0)) return failure(issue('invalid_hydraulic_inputs', '', 'Некорректные параметры расчёта.'));
   const configuredValves = new Map(Object.entries(inputs.valves ?? {}));
   for (const mixing of inputs.mixingValves ?? []) {
     const first = channelMap.get(mixing.first), second = channelMap.get(mixing.second);

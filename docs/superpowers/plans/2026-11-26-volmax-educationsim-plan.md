@@ -162,11 +162,13 @@
 
 **После:** B03–B05. **Файлы:** `src/simulation/controls.ts`, `src/simulation/sources.ts`, `tests/simulation/controls.test.ts`.
 
-- [ ] Написать `one_thermostat_drives_two_loops`, `floor_limit_keeps_air_setpoint`, `rtl_uses_return_sensor`, `power_loss_respects_nc_no_and_travel`, `heat_pump_reports_minimum_flow`, `weather_curve_respects_source_limit`, `wiring_exposes_multiple_writers_and_zero_delay_loop`, `v12_connected_limiter_overrides_manual_and_demand`, `v12_disconnected_limiter_does_not_claim_protection`, `sensor_failure_and_reset_follow_profile`.
-- [ ] Добавить граф управления, уставки, гистерезис и задержки. Датчик считывает прошлый снимок, привод применяет команду по своему графику. Различать запрос, наличие источника, разрешение и фактическое исполнение. При нескольких источниках сигнала требовать явный логический блок. Эталонную команду перегрева подать одновременно с ручным запросом и проверить приоритет только на подключённом приводе.
-- [ ] Запустить `npm run test -- tests/simulation/controls.test.ts`. Зафиксировать `feat: add heat sources and zone controls`.
+- [x] Написать `one_thermostat_drives_two_loops`, `floor_limit_keeps_air_setpoint`, `rtl_uses_return_sensor`, `power_loss_respects_nc_no_and_travel`, `heat_pump_reports_minimum_flow`, `weather_curve_respects_source_limit`, `wiring_exposes_multiple_writers_and_zero_delay_loop`, `v12_connected_limiter_overrides_manual_and_demand`, `v12_disconnected_limiter_does_not_claim_protection`, `sensor_failure_and_reset_follow_profile`.
+- [x] Добавить граф управления, уставки, гистерезис и задержки. Датчик считывает прошлый снимок, привод применяет команду по своему графику. Различать запрос, наличие источника, разрешение и фактическое исполнение. При нескольких источниках сигнала требовать явный логический блок. Эталонную команду перегрева подать одновременно с ручным запросом и проверить приоритет только на подключённом приводе.
+- [x] Запустить `npm run test -- tests/simulation/controls.test.ts`. Зафиксировать `feat: add heat sources and zone controls`.
 
 [Контракт автоматики и источников](../specs/2026-11-26-controls-contract.md).
+
+Подтверждение B06: [PR #14](https://github.com/vgvolmax/educationsim/pull/14), [проверки браузера и Windows](https://github.com/vgvolmax/educationsim/actions/runs/45869391380).
 
 ### B07. Моделировать защиту, давление, сервис и отказ
 
@@ -175,6 +177,8 @@
 - [ ] Добавить `tank_matches_v06`, `relief_event_tracks_lost_water`, `missing_tank_reaches_model_boundary`, `high_limit_disables_target_next_tick`, `trapped_air_and_dirty_filter_recover_after_service`, `service_energy_and_mass_ledger_closes`, `no_numeric_pressure_after_model_boundary`, `latched_limit_requires_reset_after_condition_clears`.
 - [ ] Реализовать расчёт давления с баком и границы применимости. Добавить переполнение, сброс, заполнение, воздух, засор и отказ датчика/привода. Критические события переводят состояние в ограниченный режим или останавливают прогон с диагностикой.
 - [ ] Запустить `npm run test -- tests/simulation/pressure.test.ts tests/simulation/faults.test.ts`. Зафиксировать `feat: simulate hydronic safety and service faults`.
+
+[Контракт давления, обслуживания и отказов](../specs/2026-11-26-service-pressure-contract.md).
 
 ### B08. Собрать Engine, повтор записей и Worker
 
