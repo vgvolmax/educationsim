@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "id": "L11",
+  "title": "Тепловой насос и буфер",
+  "goal": "Закройте зоны на двух стендах теплового насоса. Сопоставьте защиту минимального расхода без буфера и работоспособность с отдельным первичным путём.",
+  "explanation": "Буферная обвязка оставляет независимый первичный путь в этой модели. Минимальный расход и допустимый объём проверяются по паспорту конкретного насоса.",
+  "minutes": 8,
+  "hints": [
+    "Нужны одновременно достаточный расход через источник и объём воды. Наличие бака само по себе не подтверждает их для реального изделия."
+  ],
+  "cases": [
+    {
+      "id": "direct",
+      "title": "Зоны закрыты, буфера нет",
+      "template": "direct",
+      "profile": "heat-pump-direct"
+    },
+    {
+      "id": "buffered",
+      "title": "Зоны закрыты, есть буфер",
+      "template": "heat-pump-buffer",
+      "profile": "heat-pump-buffered"
+    }
+  ],
+  "actions": [
+    {
+      "id": "step",
+      "label": "Рассчитать один тик",
+      "type": "step",
+      "ticks": 1
+    },
+    {
+      "id": "go-buffered",
+      "label": "Сравнить стенд с буфером",
+      "type": "case",
+      "caseId": "buffered"
+    },
+    {
+      "id": "volume",
+      "label": "Проверить расход и полезный водяной объём",
+      "type": "answer",
+      "field": "clarification",
+      "value": "both"
+    },
+    {
+      "id": "only-tank",
+      "label": "Достаточно установить любой бак",
+      "type": "answer",
+      "field": "clarification",
+      "value": "any"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "minimum",
+      "label": "Без буфера сработал предел расхода",
+      "type": "sourceReason",
+      "caseId": "direct",
+      "componentId": "source",
+      "reason": "minimum-flow"
+    },
+    {
+      "id": "primary",
+      "label": "С буфером сохраняется первичная циркуляция",
+      "type": "range",
+      "metric": "flow",
+      "target": "component:source:source",
+      "min": 5e-05,
+      "max": 0.002,
+      "caseId": "buffered"
+    },
+    {
+      "id": "volume",
+      "label": "Названы обе проверки",
+      "type": "answer",
+      "field": "clarification",
+      "value": "both"
+    }
+  ]
+}

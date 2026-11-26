@@ -25,6 +25,7 @@ export type SimulationScenario = {
   };
   sources: readonly EngineSource[];
   pressure?: readonly EnginePressureProfile[];
+  teachingBoundary?: { sampleCellId: string; maximumC: number };
   serviceCapacityM3ByCell?: Readonly<Record<string, number>>;
   outdoorC: number;
 };

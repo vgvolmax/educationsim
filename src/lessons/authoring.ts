@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { createTemplateProject, templateIds } from '../project/templates';
 import { compileLiveScenario } from '../project/live-scenario';
+import { lessonProfiles, prepareLessonProject, prepareLessonScenario } from './fixtures';
+import { openSimulation } from '../simulation/engine';
 import { simulationCommandSchema } from '../storage/project-transfer';
 import type { ProjectDocument, Result } from '../project/types';
 import type { SimulationCommand, SimulationScenario } from '../simulation/engine-types';
@@ -13,6 +15,7 @@ const fields = z.enum(['clarification', 'choice', 'explanation', 'limit']);
 const metrics = z.enum(['flow', 'waterTemperature', 'surfaceTemperature', 'roomTemperature', 'power', 'pressure', 'opening']);
 const range = { min: z.number(), max: z.number() };
 const scene = z.strictObject({ id, title: name, template: z.enum(templateIds),
+  profile: z.enum(lessonProfiles).optional(),
   waterC: z.number().min(5).max(90).optional(),
   outdoorC: z.number().min(-45).max(35).optional(),
   diameter: z.record(id, z.number().min(.006).max(.045)).optional(),
@@ -29,14 +32,19 @@ const actions = z.discriminatedUnion('type', [
 const commonRule = { id, label: name, caseId: id.optional() };
 const rules = z.discriminatedUnion('type', [
   z.strictObject({ ...commonRule, type: z.literal('range'), metric: metrics, target: address, ...range }),
-  z.strictObject({ ...commonRule, type: z.literal('difference'), metric: metrics, target: address, otherCase: id, otherTarget: address.optional(), ...range }),
+  z.strictObject({ ...commonRule, type: z.literal('difference'), metric: metrics, target: address, otherCase: id, otherTarget: address.optional(), matchTick: z.boolean().optional(), ...range }),
   z.strictObject({ ...commonRule, type: z.literal('did'), actionId: id }),
   z.strictObject({ ...commonRule, type: z.literal('answer'), field: fields, value: id }),
   z.strictObject({ ...commonRule, type: z.literal('basket'), quantities: z.record(id, z.int().min(1).max(100)) }),
+  z.strictObject({ ...commonRule, type: z.literal('diagnostic'), code: z.enum(['pressure_capacity_unknown','relief_active','relief_flow_limited','lesson_temperature_boundary']) }),
+  z.strictObject({ ...commonRule, type: z.literal('sourceReason'), componentId: address,
+    reason: z.enum(['minimum-flow','blocked','unavailable','no-demand','at-target','heating']) }),
   z.strictObject({ ...commonRule, type: z.literal('event'), componentId: address, event: z.enum(['limiter-tripped', 'limiter-reset']) }),
 ]);
 const schema = z.strictObject({
   version: z.literal(1), id: z.string().regex(/^L(0[1-9]|1[0-5])$/), title: name, goal: prose, explanation: prose,
+  sourceCard: z.strictObject({ offerId: z.string().regex(/^\d{1,12}$/), article: name,
+    url: z.url({ protocol: /^https$/, hostname: /^volmax\.ru$/ }).regex(/^https:\/\/volmax\.ru\/catalog\//) }).optional(),
   minutes: z.int().min(1).max(45), hints: z.array(prose).max(10),
   cases: z.array(scene).min(1).max(6), actions: z.array(actions).min(1).max(80), criteria: z.array(rules).min(1).max(30),
 });
@@ -93,9 +101,15 @@ export function prepareLesson(raw: unknown): Result<PreparedLesson> {
       if (!link) return failure('lesson_reference', 'cases.' + definition.id, 'Не удалось сопоставить трубу.');
       link.innerDiameterM = diameter;
     }
-    const run = compileLiveScenario(project, definition.template);
-    if (!run.ok) return run;
-    cases.push({ definition, project, scenario: run.value });
+    try {
+      prepareLessonProject(project, definition.profile);
+      const run = compileLiveScenario(project, definition.template);
+      if (!run.ok) return run;
+      const scenario = prepareLessonScenario(run.value, definition.profile);
+      const opened = openSimulation(scenario);
+      if (!opened.ok) return opened;
+      cases.push({ definition, project, scenario });
+    } catch (err) { return failure('lesson_fixture', 'cases.' + definition.id, err instanceof Error ? err.message : 'Ошибка учебного стенда.'); }
   }
   const known = new Map(cases.map((c) => [c.definition.id, c]));
   for (const action of lesson.actions) {
@@ -119,7 +133,8 @@ export function prepareLesson(raw: unknown): Result<PreparedLesson> {
       } else if (criterion.type === 'did') valid = lesson.actions.some((a) => a.id === criterion.actionId);
       else if (criterion.type === 'answer') valid = lesson.actions.some((a) => a.type === 'answer' && a.field === criterion.field && a.value === criterion.value);
       else if (criterion.type === 'basket') valid = Object.keys(criterion.quantities).every((key) => lesson.actions.some((a) => a.type === 'quantity' && a.item === key && a.delta === 1));
-      else valid = target.scenario.control.devices.some((d) => d.id === criterion.componentId);
+      else if (criterion.type === 'sourceReason') valid = target.scenario.sources.some((s) => s.componentId === criterion.componentId);
+      else if (criterion.type === 'event') valid = target.scenario.control.devices.some((d) => d.id === criterion.componentId);
     }
     if (!valid) return failure('lesson_reference', 'criteria.' + criterion.id, 'Критерий не связан с доступным измерением или действием.');
   }

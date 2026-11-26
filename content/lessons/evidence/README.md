@@ -1,0 +1,5 @@
+# Lesson evidence
+
+`attempts.json` holds successful and intentionally incorrect input sequences against the 15 named lesson fixtures. Run `npm test -- tests/lessons/pack.test.ts` to regenerate each scenario with its versioned authoring rules, execute the commands, verify the rubric and replay every resulting record against the sealed model snapshot. There are no employee results or real installation approvals in this evidence.
+
+The direct loop balancing fixture has individual teaching goals 2.22 and 2.40 L/min (±10%). The mixing fixture measures 32.7 °C at 120 model ticks with 35% hot inlet, tolerance ±1 °C. The fixtures use explicitly synthetic geometry/materials and hydraulic models; they do not specify safe field settings. L10 uses the matched linear resistance comparison of V11. L08 and L11 retain teaching service/operating boundaries. L05 and L14 use a generic RTL circuit; the product G1495 remains unconfirmed for that role. L15 uses the archived published Eco 4 BOM with explicit category ambiguity and prohibits duplicate purchase. Final engineering review and real pilot remain G02.

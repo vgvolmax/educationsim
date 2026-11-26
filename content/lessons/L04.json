@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "id": "L04",
+  "title": "Подмес горячей подачи",
+  "goal": "Настройте смеситель, чтобы после переходного режима подача пола была в учебной полосе ±1 °C, а радиаторная ветвь не остановилась. Цель стенда: 32,7 °C после 120 тиков.",
+  "explanation": "Горячая доля меняет температуру подачи пола. Радиаторный контур работает отдельно; эти положения не переносятся на реальное изделие.",
+  "minutes": 8,
+  "hints": [
+    "Смешивается горячая подача с обраткой. Сравните 35 % и 80 % на двух одинаковых стендах после расчётного перехода."
+  ],
+  "cases": [
+    {
+      "id": "low",
+      "title": "Горячий вход: 35 %",
+      "template": "floor-and-radiators",
+      "profile": "mixed-low",
+      "waterC": 30
+    },
+    {
+      "id": "high",
+      "title": "Горячий вход: 80 %",
+      "template": "floor-and-radiators",
+      "profile": "mixed-high",
+      "waterC": 30
+    }
+  ],
+  "actions": [
+    {
+      "id": "advance",
+      "label": "Просчитать 120 тиков",
+      "type": "step",
+      "ticks": 120
+    },
+    {
+      "id": "go-high",
+      "label": "Установить горячий вход 80 %",
+      "type": "case",
+      "caseId": "high"
+    },
+    {
+      "id": "go-low",
+      "label": "Установить горячий вход 35 %",
+      "type": "case",
+      "caseId": "low"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "mixed",
+      "label": "Подача пола в целевой температурной полосе",
+      "type": "range",
+      "metric": "waterTemperature",
+      "target": "link:delivery",
+      "min": 31.7,
+      "max": 33.7,
+      "caseId": "low"
+    },
+    {
+      "id": "rad",
+      "label": "Радиаторная ветвь циркулирует",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:rad-feed",
+      "min": 1e-07,
+      "max": 0.002,
+      "caseId": "low"
+    },
+    {
+      "id": "difference",
+      "label": "Настройки дали разную температуру смеси",
+      "type": "difference",
+      "metric": "waterTemperature",
+      "target": "link:delivery",
+      "min": 0.01,
+      "max": 40,
+      "caseId": "high",
+      "otherCase": "low"
+    }
+  ]
+}

@@ -1,6 +1,5 @@
-import { prepareLesson } from './authoring';
-import { firstLesson } from './first-lesson';
+import type { Lesson } from './authoring';
 
-const checked = prepareLesson(firstLesson);
-if (!checked.ok) throw new Error(checked.diagnostics[0].message);
-export const lessonLibrary = [checked.value] as const;
+const bundled = import.meta.glob<Lesson>('../../content/lessons/L*.json', { eager: true, import: 'default' });
+// Author verification is exhaustive in pack.test; prepare only the lesson that is opened at runtime.
+export const lessonLibrary = Object.entries(bundled).sort(([a], [b]) => a.localeCompare(b)).map(([, raw]) => raw);

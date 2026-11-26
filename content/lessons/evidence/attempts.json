@@ -1,0 +1,211 @@
+{
+  "L01": {
+    "success": [
+      "step",
+      "supply",
+      "loop",
+      "return"
+    ],
+    "incorrect": [
+      "supply"
+    ]
+  },
+  "L02": {
+    "success": [
+      "step",
+      "balance"
+    ],
+    "incorrect": [
+      "step",
+      "wrong"
+    ]
+  },
+  "L03": {
+    "success": [
+      "step",
+      "actor",
+      "go-warm",
+      "step"
+    ],
+    "incorrect": [
+      "go-warm",
+      "step"
+    ]
+  },
+  "L04": {
+    "success": [
+      "advance",
+      "go-high",
+      "advance"
+    ],
+    "incorrect": [
+      "go-high",
+      "advance"
+    ]
+  },
+  "L05": {
+    "success": [
+      "settle",
+      "go-hot",
+      "settle",
+      "return-rule"
+    ],
+    "incorrect": [
+      "go-hot",
+      "settle",
+      "supply-rule"
+    ]
+  },
+  "L06": {
+    "success": [
+      "step",
+      "go-bypass",
+      "step",
+      "go-stop",
+      "off"
+    ],
+    "incorrect": [
+      "step",
+      "go-bypass",
+      "step"
+    ]
+  },
+  "L07": {
+    "success": [
+      "air-lock",
+      "go-dirty",
+      "dirt",
+      "go-clear",
+      "clear-air",
+      "clear-dirt",
+      "vent",
+      "clean"
+    ],
+    "incorrect": [
+      "air-lock",
+      "go-dirty",
+      "dirt",
+      "go-clear",
+      "clear-air",
+      "clear-dirt",
+      "clean"
+    ]
+  },
+  "L08": {
+    "success": [
+      "fill",
+      "go-restored",
+      "fill-relief"
+    ],
+    "incorrect": [
+      "go-restored",
+      "step"
+    ]
+  },
+  "L09": {
+    "success": [
+      "step",
+      "go-unprotected",
+      "step"
+    ],
+    "incorrect": [
+      "go-unprotected",
+      "step"
+    ]
+  },
+  "L10": {
+    "success": [
+      "step",
+      "go-series-fast",
+      "step",
+      "go-sep-slow",
+      "step",
+      "go-sep-fast",
+      "step",
+      "go-check",
+      "step"
+    ],
+    "incorrect": [
+      "go-sep-fast",
+      "step",
+      "go-check",
+      "step"
+    ]
+  },
+  "L11": {
+    "success": [
+      "step",
+      "go-buffered",
+      "step",
+      "volume"
+    ],
+    "incorrect": [
+      "go-buffered",
+      "step",
+      "only-tank"
+    ]
+  },
+  "L12": {
+    "success": [
+      "advance",
+      "go-dry",
+      "advance",
+      "go-cold",
+      "advance",
+      "separate"
+    ],
+    "incorrect": [
+      "go-dry",
+      "advance",
+      "same"
+    ]
+  },
+  "L13": {
+    "success": [
+      "step",
+      "balance",
+      "curve"
+    ],
+    "incorrect": [
+      "step",
+      "wrong",
+      "max-head"
+    ]
+  },
+  "L14": {
+    "success": [
+      "advance",
+      "go-mixed",
+      "advance",
+      "inlets",
+      "choice",
+      "limit"
+    ],
+    "incorrect": [
+      "advance",
+      "go-mixed",
+      "advance",
+      "sku-only",
+      "choice"
+    ]
+  },
+  "L15": {
+    "success": [
+      "step",
+      "kit-plus",
+      "pipe-plus",
+      "count",
+      "published",
+      "length"
+    ],
+    "incorrect": [
+      "step",
+      "kit-plus",
+      "pipe-plus",
+      "extra-pump",
+      "count",
+      "published",
+      "head-only"
+    ]
+  }
+}

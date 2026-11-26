@@ -18,10 +18,15 @@ export function LessonLauncher({ launch }: { launch(lesson: PreparedLesson): voi
       else setError(checked.diagnostics.map((d) => d.path + ': ' + d.message).join(' '));
     } catch { setError('Урок не удалось прочитать как JSON в UTF-8.'); }
   }
+  function useBundled(raw: typeof lessonLibrary[number]) {
+    const result = prepareLesson(raw);
+    if (result.ok) { setError(''); launch(result.value); }
+    else setError(result.diagnostics.map((item) => item.message).join(' '));
+  }
   return <section aria-label="Учебные задания" className="template-section">
     <h2>Учебные задания</h2>
-    <div className="template-list">{lessonLibrary.map((lesson) => <button key={lesson.definition.id} onClick={() => launch(lesson)}>
-      {lesson.definition.id} · {lesson.definition.title} · {lesson.definition.minutes} мин</button>)}</div>
+    <div className="template-list">{lessonLibrary.map((lesson) => <button key={lesson.id} onClick={() => useBundled(lesson)}>
+      {lesson.id} · {lesson.title} · {lesson.minutes} мин</button>)}</div>
     <details className="lesson-author"><summary>Предпросмотр авторского урока</summary>
       <p>Файл проверяется и открывается локально как отдельная попытка. Он не заменяет встроенный урок.</p>
       <label>Файл урока JSON<input type="file" accept=".json,application/json" onChange={(e) => {

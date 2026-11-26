@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "id": "L05",
+  "title": "RTL по температуре обратки",
+  "goal": "Сопоставьте одну и ту же RTL-петлю при прохладном и горячем теплоносителе. Объясните, какой датчик управляет клапаном.",
+  "explanation": "Учебный RTL перекрывает обратную ветвь после достижения порога. Для товара проверяются точка измерения, направление и допустимость по паспорту.",
+  "minutes": 8,
+  "hints": [
+    "RTL ограничивает температуру воды на обратке. Комнатная температура и температура подачи — отдельные величины."
+  ],
+  "cases": [
+    {
+      "id": "cool",
+      "title": "Прохладная обратка",
+      "template": "rtl-loop",
+      "waterC": 24
+    },
+    {
+      "id": "hot",
+      "title": "Горячая обратка",
+      "template": "rtl-loop",
+      "waterC": 45
+    }
+  ],
+  "actions": [
+    {
+      "id": "go-hot",
+      "label": "Подать горячую воду стенда",
+      "type": "case",
+      "caseId": "hot"
+    },
+    {
+      "id": "go-cool",
+      "label": "Вернуть прохладный стенд",
+      "type": "case",
+      "caseId": "cool"
+    },
+    {
+      "id": "settle",
+      "label": "Дать клапану 4 тика",
+      "type": "step",
+      "ticks": 4
+    },
+    {
+      "id": "return-rule",
+      "label": "Объяснение: температура обратки",
+      "type": "answer",
+      "field": "explanation",
+      "value": "return"
+    },
+    {
+      "id": "supply-rule",
+      "label": "Объяснение: только температура подачи",
+      "type": "answer",
+      "field": "explanation",
+      "value": "feed"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "cooling",
+      "label": "На прохладном стенде расход положителен",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-a",
+      "min": 1e-07,
+      "max": 0.002,
+      "caseId": "cool"
+    },
+    {
+      "id": "closed",
+      "label": "Горячая обратка закрыла RTL",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-a",
+      "min": 0,
+      "max": 1e-10,
+      "caseId": "hot"
+    },
+    {
+      "id": "rule",
+      "label": "Проверено измерение именно обратки",
+      "type": "answer",
+      "field": "explanation",
+      "value": "return"
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "id": "L03",
+  "title": "Две петли и один термостат",
+  "goal": "Назначьте двум петлям общую зону. Сравните показания при запросе и после прогрева воздуха; проверьте независимую ветвь.",
+  "explanation": "Один сигнал термостата может управлять несколькими назначенными приводами, но не изменяет независимую зону.",
+  "minutes": 8,
+  "hints": [
+    "В тепле запрос снимается только в основной зоне. Отдельный контур должен сохранить расход."
+  ],
+  "cases": [
+    {
+      "id": "cold",
+      "title": "Запрос основной зоны",
+      "template": "direct",
+      "profile": "paired-cold"
+    },
+    {
+      "id": "warm",
+      "title": "Основная зона прогрета",
+      "template": "direct",
+      "profile": "paired-warm"
+    }
+  ],
+  "actions": [
+    {
+      "id": "step",
+      "label": "Рассчитать один тик",
+      "type": "step",
+      "ticks": 1
+    },
+    {
+      "id": "go-warm",
+      "label": "Переключиться на прогретую зону",
+      "type": "case",
+      "caseId": "warm"
+    },
+    {
+      "id": "go-cold",
+      "label": "Вернуться к холодной зоне",
+      "type": "case",
+      "caseId": "cold"
+    },
+    {
+      "id": "actor",
+      "label": "Проверить две петли одной зоны",
+      "type": "inspect",
+      "target": "manifold"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "did-actor",
+      "label": "Отмечен общий узел",
+      "type": "did",
+      "actionId": "actor"
+    },
+    {
+      "id": "cold-a",
+      "label": "Первая назначенная петля открыта",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-a",
+      "min": 1e-07,
+      "max": 0.002,
+      "caseId": "cold"
+    },
+    {
+      "id": "cold-b",
+      "label": "Вторая назначенная петля открыта",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-b",
+      "min": 1e-07,
+      "max": 0.002,
+      "caseId": "cold"
+    },
+    {
+      "id": "warm-a",
+      "label": "Первая петля без запроса",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-a",
+      "min": 0,
+      "max": 1e-10,
+      "caseId": "warm"
+    },
+    {
+      "id": "warm-b",
+      "label": "Вторая петля без запроса",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-b",
+      "min": 0,
+      "max": 1e-10,
+      "caseId": "warm"
+    },
+    {
+      "id": "neighbor",
+      "label": "Независимая ветвь продолжает циркуляцию",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:aux-pipe-a",
+      "min": 1e-07,
+      "max": 0.002,
+      "caseId": "warm"
+    }
+  ]
+}

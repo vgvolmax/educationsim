@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "id": "L15",
+  "title": "Клиент: комплект на четыре петли",
+  "goal": "Для трёх комнат требуется четыре петли. Проверьте состав «Эко 4», добавьте недостающую трубу и не дублируйте насос. Обоснуйте проверку замены 130/180 мм.",
+  "explanation": "Число петель не равно числу комнат. Труба покупается отдельно; наличие насоса проверяется по конкретному составу. Монтажная длина, присоединения и рабочая точка проверяются вместе.",
+  "minutes": 12,
+  "hints": [
+    "Карточка 17052-04eco публикует четыре позиции и восемь евроконусов. Категория противоречит карточке: получите подтверждение прежде, чем обещать состав."
+  ],
+  "cases": [
+    {
+      "id": "main",
+      "title": "Контрольный прогон прямого контура",
+      "template": "direct"
+    }
+  ],
+  "actions": [
+    {
+      "id": "step",
+      "label": "Рассчитать один тик",
+      "type": "step",
+      "ticks": 1
+    },
+    {
+      "id": "kit-plus",
+      "label": "Добавить один комплект Эко 4",
+      "type": "quantity",
+      "item": "kit-eco-4",
+      "delta": 1
+    },
+    {
+      "id": "pipe-plus",
+      "label": "Добавить отдельную трубу",
+      "type": "quantity",
+      "item": "pipe",
+      "delta": 1
+    },
+    {
+      "id": "extra-pump",
+      "label": "Добавить ещё один насос",
+      "type": "quantity",
+      "item": "extra-pump",
+      "delta": 1
+    },
+    {
+      "id": "remove-extra",
+      "label": "Убрать лишний насос",
+      "type": "quantity",
+      "item": "extra-pump",
+      "delta": -1
+    },
+    {
+      "id": "count",
+      "label": "Четыре петли, хотя комнат три",
+      "type": "answer",
+      "field": "clarification",
+      "value": "four"
+    },
+    {
+      "id": "count-wrong",
+      "label": "Достаточно трёх выходов",
+      "type": "answer",
+      "field": "clarification",
+      "value": "three"
+    },
+    {
+      "id": "published",
+      "label": "По карточке восемь евроконусов; подтвердить расхождение",
+      "type": "answer",
+      "field": "choice",
+      "value": "published"
+    },
+    {
+      "id": "length",
+      "label": "Сверить 130/180 мм, присоединения и рабочую точку",
+      "type": "answer",
+      "field": "explanation",
+      "value": "fit"
+    },
+    {
+      "id": "head-only",
+      "label": "Совпадения максимального напора достаточно",
+      "type": "answer",
+      "field": "explanation",
+      "value": "head"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "active",
+      "label": "Положительный расход получен расчётом",
+      "type": "range",
+      "metric": "flow",
+      "target": "link:pipe-a",
+      "min": 1e-07,
+      "max": 0.002
+    },
+    {
+      "id": "basket",
+      "label": "Ровно нужные позиции, без лишних",
+      "type": "basket",
+      "quantities": {
+        "kit-eco-4": 1,
+        "pipe": 1
+      }
+    },
+    {
+      "id": "four",
+      "label": "Выбрано число петель, не комнат",
+      "type": "answer",
+      "field": "clarification",
+      "value": "four"
+    },
+    {
+      "id": "composition",
+      "label": "Состав и расхождение учтены",
+      "type": "answer",
+      "field": "choice",
+      "value": "published"
+    },
+    {
+      "id": "fit",
+      "label": "Проверены габариты и гидравлика",
+      "type": "answer",
+      "field": "explanation",
+      "value": "fit"
+    }
+  ],
+  "sourceCard": {
+    "offerId": "36872",
+    "article": "17052-04eco",
+    "url": "https://volmax.ru/catalog/inzhenernaya-santekhnika/kollektory-i-kollektornye-gruppy/komplekty-dlya-teplogo-pola/komplekt-dlya-teplogo-pola-1-kh3-4-4-vykh-eko/"
+  }
+}
