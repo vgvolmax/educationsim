@@ -68,9 +68,11 @@
 
 **После:** A01. **Файлы:** `src/project/types.ts`, `src/project/document.ts`, `src/project/units.ts`, `tests/project/document.test.ts`, `tests/fixtures/projects/direct-small.json`.
 
-- [ ] Создать `accepts_valid_v1_and_rejects_invalid_graph_document`: новый документ читается, чужие версии, дубликаты ID, нечисловые параметры, недопустимый размер и висящие ссылки дают конкретные диагностики.
-- [ ] Реализовать DTO, схемы и преобразования для русских десятичных чисел и отображаемых единиц. Добавить валидную фикстуру из одной комнаты и двух петель. Внутренние идентификаторы не содержат ярлыков интерфейса.
-- [ ] Запустить `npm run test -- tests/project/document.test.ts`. Проверить, что парсер не мутирует передаваемый объект. Зафиксировать `feat: define project document and units`.
+- [x] Создать `accepts_valid_v1_and_rejects_invalid_graph_document`: новый документ читается, чужие версии, дубликаты ID, нечисловые параметры, недопустимый размер и висящие ссылки дают конкретные диагностики.
+- [x] Реализовать DTO, схемы и преобразования для русских десятичных чисел и отображаемых единиц. Добавить валидную фикстуру из одной комнаты и двух петель. Внутренние идентификаторы не содержат ярлыков интерфейса.
+- [x] Запустить `npm run test -- tests/project/document.test.ts`. Проверить, что парсер не мутирует передаваемый объект. Зафиксировать `feat: define project document and units`.
+
+Подтверждение A02: [PR #6](https://github.com/vgvolmax/educationsim/pull/6), [проверки браузера и Windows](https://github.com/vgvolmax/educationsim/actions/runs/45846906931).
 
 ### A03. Реализовать редакторские команды, порты и правила связей
 
