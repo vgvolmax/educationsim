@@ -139,6 +139,11 @@ test('launches the packaged app offline, retains storage and rejects a second in
     });
     expect(exit).toBe(0);
     expect(app.windows()).toHaveLength(1);
+    expect(await page.evaluate(() => typeof window.educationWorkspace?.onPrepareClose)).toBe('function');
+    await page.getByRole('button', { name: 'Добавить комнату' }).click();
+    await expect(page.locator('[data-room]')).toHaveCount(2);
+    // Immediately trigger app.close() below, rather than waiting out the autosave debounce.
+
   } finally {
     await app.close();
   }
@@ -147,7 +152,8 @@ test('launches the packaged app offline, retains storage and rejects a second in
   try {
     const page = await restarted.firstWindow();
     await expect(page.getByRole('heading', { name: 'Волмакс · Тёплый пол' })).toBeVisible();
-    await page.getByRole('button', { name: 'Прямое подключение: две петли' }).click();
+    await page.getByRole('button', { name: 'Открыть последний сохранённый проект' }).click();
+    await expect(page.locator('[data-room]')).toHaveCount(2);
     await page.getByRole('button', { name: 'Каталог ВОЛМАКС', exact: true }).click();
     await expect(page.getByText('Версия: packaged-catalog')).toBeVisible();
     const read = await page.evaluate(() => new Promise((resolve, reject) => {

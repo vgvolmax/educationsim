@@ -57,9 +57,9 @@ test('the editor fits a narrow window and does not discard work from the home sc
   await expect(page.getByRole('img', { name: 'Схема этажа' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(720);
   await page.getByRole('button', { name: 'Старт' }).click();
-  page.once('dialog', (dialog) => dialog.dismiss());
   await page.getByRole('button', { name: 'Прямое подключение: две петли' }).click();
-  await page.getByRole('button', { name: 'Вернуться к текущему проекту' }).click();
+  await page.getByRole('button', { name: 'Старт' }).click();
+  await page.getByRole('button', { name: 'Новый проект · редакция 1', exact: true }).click();
   await expect(page.locator('[data-room]')).toHaveCount(1);
   await expect(page.getByRole('heading', { name: 'Новый проект' })).toBeVisible();
 });
