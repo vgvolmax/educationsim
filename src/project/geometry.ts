@@ -1,7 +1,7 @@
 import type { Diagnostic, Point2, Room } from './types';
 
 const epsilon = 1e-8;
-export type RoomGeometry = Pick<Room, 'outline' | 'exclusions'>;
+export type RoomGeometry = { outline: readonly Point2[]; exclusions: readonly Room['exclusions'][number][] };
 
 function subtract(a: Point2, b: Point2): Point2 {
   return { x: a.x - b.x, z: a.z - b.z };

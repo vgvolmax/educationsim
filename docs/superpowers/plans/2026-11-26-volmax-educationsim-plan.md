@@ -78,9 +78,11 @@
 
 **После:** A02. **Файлы:** `src/project/reducer.ts`, `src/project/topology.ts`, `src/project/registry.ts`, `src/project/history.ts`, `tests/project/topology.test.ts`, `tests/project/reducer.test.ts`.
 
-- [ ] Написать `rejects_incompatible_ports_and_exposes_adapter_need`, `delete_disconnects_owned_links`, `replacement_preserves_only_compatible_links`, `undo_restores_graph_snapshot`. Проверить выведенный план изменений до принятия команды замены.
-- [ ] Создать первичный реестр типов, проверки доменов и присоединения, редьюсер команд, историю. Удаление убирает связи. Замена сохраняет только доказуемо совместимые связи. Серия правок применяется атомарно. Диагностика сохраняет ID порта.
-- [ ] Запустить `npm run test -- tests/project/topology.test.ts tests/project/reducer.test.ts`. Зафиксировать `feat: add typed connection editor`.
+- [x] Написать `rejects_incompatible_ports_and_exposes_adapter_need`, `delete_disconnects_owned_links`, `replacement_preserves_only_compatible_links`, `undo_restores_graph_snapshot`. Проверить выведенный план изменений до принятия команды замены.
+- [x] Создать первичный реестр типов, проверки доменов и присоединения, редьюсер команд, историю. Удаление убирает связи. Замена сохраняет только доказуемо совместимые связи. Серия правок применяется атомарно. Диагностика сохраняет ID порта.
+- [x] Запустить `npm run test -- tests/project/topology.test.ts tests/project/reducer.test.ts`. Зафиксировать `feat: add typed connection editor`.
+
+Подтверждение A03: [PR #7](https://github.com/vgvolmax/educationsim/pull/7), [проверка main](https://github.com/vgvolmax/educationsim/actions/runs/45848203497).
 
 ### A04. Проверять геометрию комнат и строить трассы
 
@@ -89,6 +91,8 @@
 - [ ] Написать `both_route_styles_work_in_reference_rectangle`, `l_room_serpentine_respects_zones`, `routes_avoid_keepouts`, `manual_route_requires_explicit_replacement`, `short_radius_and_crossing_are_reported`, `levels_support_riser`, `max_density_request_is_cancellable_and_preserves_route`. Использовать предельную комнату и шаг 50 мм, проверить диагностику бюджета и отсутствие перезаписи принятой трассы.
 - [ ] Реализовать расчёт простой ортогональной комнаты, вырезов, запретных зон, маршрутов, фактической длины с подводками и переходами уровней. Вынести автопрокладку в Worker и проверять лимиты до расчёта. Игнорировать устаревший результат после отмены или смены ревизии. Для перекрытий и слишком малого радиуса возвращать диагностику с локализацией. Места пересечения шва отмечать защитной гильзой или предупреждением.
 - [ ] Запустить `npm run test -- tests/project/routing.test.ts`. Зафиксировать `feat: generate and validate floor loop routes`.
+
+[Контракт расчёта трассы](../specs/2026-11-26-routing-contract.md).
 
 ## Этап B. Расчётное ядро без UI
 

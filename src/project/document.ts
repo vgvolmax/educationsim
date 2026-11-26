@@ -1,5 +1,6 @@
 import { checkJsonValue, fitsJsonBudget } from './json-input';
-import { projectLimits, projectSchema } from './schema';
+import { projectLimits } from './limits';
+import { projectSchema } from './schema';
 import type { Diagnostic, ProjectDocument, Result } from './types';
 
 const issue = (code: string, path: string, message: string): Diagnostic =>

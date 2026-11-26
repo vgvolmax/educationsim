@@ -1,13 +1,6 @@
 import { z } from 'zod';
 
-export const projectLimits = {
-  jsonBytes: 10 * 1024 * 1024,
-  routePoints: 1024,
-  totalRoutePoints: 16_384,
-  rooms: 128,
-  components: 2048,
-  linksPerDomain: 4096,
-} as const;
+import { projectLimits } from './limits';
 
 const id = z.string().regex(/^[a-z0-9][a-z0-9_-]{0,95}$/i)
   .refine((value) => value !== 'constructor' && value !== 'prototype');
