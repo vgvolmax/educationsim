@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { cp } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
 import { _electron, expect, test } from '@playwright/test';
+import { scenario } from '../fixtures/simulation-engine';
 
 test('launches the packaged app offline, retains storage and rejects a second instance', async ({}, testInfo) => {
   test.setTimeout(150_000);
@@ -34,6 +35,35 @@ test('launches the packaged app offline, retains storage and rejects a second in
       return Promise.all(urls.map(async (url) => (await net.fetch(url)).status));
     });
     expect(blocked).toEqual([404, 404, 404]);
+
+    const calculation = await page.evaluate(async (fixture) => {
+      const built = '/assets/simulation.js';
+      const { createSimulationClient } = await import(built) as typeof import('../../src/worker/client');
+      const client = createSimulationClient(undefined, 5000);
+      const wait = async (condition: () => boolean) => {
+        const until = performance.now() + 5500;
+        while (!condition() && performance.now() < until && client.state.mode !== 'stalled') {
+          await new Promise((resolve) => setTimeout(resolve, 25));
+        }
+        if (!condition()) throw new Error(JSON.stringify(client.state.diagnostics));
+      };
+      try {
+        client.load('packaged-offline', fixture);
+        await wait(() => client.state.mode === 'paused');
+        client.send({ kind: 'command', command: { kind: 'manual', actuatorId: 'drive', demand: true } });
+        client.send({ kind: 'step' });
+        await wait(() => client.state.view?.snapshot.tick === 1);
+        const snapshot = client.state.view!.snapshot;
+        return {
+          time: snapshot.tick,
+          a: snapshot.hydraulics?.channels['link:pipe-a']?.flowM3s,
+          b: snapshot.hydraulics?.channels['link:pipe-b']?.flowM3s,
+        };
+      } finally { client.dispose(); }
+    }, scenario());
+    expect(calculation.time).toBe(1);
+    expect(calculation.a).toBeGreaterThan(0);
+    expect(calculation.a).toBeCloseTo(calculation.b!, 10);
 
     const monitor = await app.evaluateHandle(({ shell }) => {
       const seen: string[] = [];
