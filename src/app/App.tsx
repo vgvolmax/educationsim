@@ -1,15 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Editor } from '../editor/Editor';
 import { editorId, useProject } from '../editor/useProject';
 import { createEmptyProject } from '../project/editor-geometry';
 import { createTemplateProject, templateIds } from '../project/templates';
 import type { TemplateId } from '../project/templates';
+import { WorkspaceTools } from '../storage/WorkspaceTools';
+import { useAutosave } from '../storage/useAutosave';
+import { cloneWorkspace, emptyArtifacts } from '../storage/project-transfer';
+import type { Workspace } from '../storage/project-transfer';
+import type { SavedProject } from '../storage/projects';
 import './shell.css';
 
 export function App() {
   const ctl = useProject();
   const [editing, setEditing] = useState(false);
   const [preset, setPreset] = useState<TemplateId | undefined>();
+  const [artifacts, setArtifacts] = useState(emptyArtifacts);
+  const workspace = useMemo<Workspace | null>(() => ctl.history ? { project: ctl.history.current, preset, ...artifacts } : null,
+    [ctl.history, preset, artifacts]);
+  const save = useAutosave(workspace);
   const [runtime, setRuntime] = useState('Проверяем локальные ресурсы…');
   useEffect(() => {
     const signal = new AbortController();
@@ -46,33 +55,61 @@ export function App() {
     return () => { clearTimeout(timer); signal.abort(); worker.terminate(); };
   }, []);
 
-  function launch(template?: TemplateId) {
-    if (ctl.history && !window.confirm('Заменить текущий проект? Изменения этого сеанса не сохранены.')) return;
-    if (!template) ctl.open(createEmptyProject(editorId('project')));
+  function pick(next: Workspace, saved: SavedProject | null) {
+    save.select(saved); ctl.open(next.project); setPreset(next.preset);
+    setArtifacts({ captures: next.captures, records: next.records }); setEditing(true);
+  }
+  async function launch(template?: TemplateId) {
+    if (!await save.flush()) return;
+    if (!template) pick({ project: createEmptyProject(editorId('project')), ...emptyArtifacts() }, null);
     else {
       const result = createTemplateProject(template, editorId('project'));
       if (!result.ok) { ctl.setError(result.diagnostics[0].message); return; }
-      ctl.open(result.value);
+      pick({ project: result.value, preset: template, ...emptyArtifacts() }, null);
     }
-    setPreset(template);
-    setEditing(true);
   }
-  if (editing && ctl.history) return <Editor project={ctl.history.current} preset={preset} ctl={ctl} onHome={() => setEditing(false)} />;
+  async function restore(id: string) {
+    if (!await save.flush()) return;
+    if (id === workspace?.project.projectId) { setEditing(true); return; }
+    try {
+      const known = await save.repo.get(id);
+      if (known) pick(known.workspace, known);
+    } catch (e) { ctl.setError(e instanceof Error ? e.message : 'Проект не удалось открыть.'); }
+  }
+  const tools = <WorkspaceTools workspace={workspace} save={save}
+    onImport={async (next) => {
+      if (!await save.flush()) return false;
+      pick(cloneWorkspace(next, editorId('project')), null); return true;
+    }}
+    onDuplicate={() => {
+      if (!workspace || save.state.saving) return;
+      pick(cloneWorkspace(workspace, editorId('project')), null);
+    }} />;
+  if (editing && ctl.history) return <>{tools}<Editor project={ctl.history.current} preset={preset} ctl={ctl}
+    artifacts={artifacts} onArtifacts={setArtifacts} onHome={() => setEditing(false)} /></>;
   return (
     <main className="shell">
       <p className="eyebrow">Учебная лаборатория · Волмакс</p>
       <h1>Волмакс · Тёплый пол</h1>
       <p className="intro">Конструктор водяного напольного отопления.</p>
       <div className="actions">
-        <button className="primary" onClick={() => launch()}>Новый проект</button>
+        <button className="primary" onClick={() => { void launch(); }}>Новый проект</button>
         {ctl.history && <button onClick={() => setEditing(true)}>Вернуться к текущему проекту</button>}
       </div>
+      {tools}
+      {save.error && <p role="alert">{save.error}</p>}
+      {save.recent.length > 0 && <section className="recent-projects" aria-label="Локальные проекты">
+        <h2>Локальные проекты</h2>
+        {save.last && <button onClick={() => { void restore(save.last); }}>Открыть последний сохранённый проект</button>}
+        <ul>{save.recent.slice(0, 50).map((p) => <li key={p.projectId}><button onClick={() => { void restore(p.projectId); }}>
+          {p.title} · редакция {p.revision}</button></li>)}</ul>
+      </section>}
       {ctl.error && <p role="alert">{ctl.error}</p>}
       <section aria-label="Стартовые схемы" className="template-section">
         <h2>Стартовые схемы</h2><p>Откройте учебную схему как отдельный проект.</p>
         <div className="template-list">{templateIds.map((id) => {
           const result = createTemplateProject(id, 'preview');
-          return result.ok && <button key={id} onClick={() => launch(id)}>{result.value.title}</button>;
+          return result.ok && <button key={id} onClick={() => { void launch(id); }}>{result.value.title}</button>;
         })}</div>
       </section>
       <footer>

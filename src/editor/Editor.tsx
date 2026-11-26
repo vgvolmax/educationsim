@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import type { FormEvent, KeyboardEvent } from 'react';
+import type { Dispatch, FormEvent, KeyboardEvent, SetStateAction } from 'react';
 import { rectangleOf } from '../project/editor-geometry';
 import { equipmentRegistry, trainingRegistry } from '../project/registry';
 import type { PortEndpoint, ProjectDocument, Room } from '../project/types';
@@ -14,6 +14,7 @@ import type { SceneLive } from '../views/scene/Scene';
 import { Schematic } from '../views/schematic/Schematic';
 import { editorId } from './useProject';
 import type { ProjectController } from './useProject';
+import type { ProjectArtifacts } from '../storage/project-transfer';
 import './editor.css';
 
 const CatalogPanel = lazy(async () => ({ default: (await import('../catalog/CatalogPanel')).CatalogPanel }));
@@ -35,7 +36,8 @@ function RoomForm({ room, ctl }: { room: Room; ctl: ProjectController }) {
   </form>;
 }
 
-export function Editor({ ctl, project, preset, onHome }: { ctl: ProjectController; project: ProjectDocument; preset?: TemplateId; onHome(): void }) {
+export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome }: { ctl: ProjectController; project: ProjectDocument; preset?: TemplateId;
+  artifacts: ProjectArtifacts; onArtifacts: Dispatch<SetStateAction<ProjectArtifacts>>; onHome(): void }) {
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [sceneFailed, setSceneFailed] = useState(false);
@@ -123,6 +125,16 @@ export function Editor({ ctl, project, preset, onHome }: { ctl: ProjectControlle
       <label><input type="checkbox" checked={water} onChange={(e) => setWater(e.target.checked)} /> Вода</label>
       <label><input type="checkbox" checked={control} onChange={(e) => setControl(e.target.checked)} /> Управление</label>
     </div>
+    <details className="editor-section"><summary>Имя проекта</summary>
+      <form className="project-title-form" onSubmit={(event) => {
+        event.preventDefault();
+        const title = String(new FormData(event.currentTarget).get('title')).trim();
+        ctl.apply({ kind: 'rename_project', commandId: editorId('title'), title });
+      }}>
+        <label>Новое имя<input name="title" defaultValue={project.title} key={project.title} /></label>
+        <button type="submit">Сохранить имя</button>
+      </form>
+    </details>
     {ctl.error && <p className="editor-error" role="alert">{ctl.error}</p>}
     <div className="work-body">
       <aside className="work-tree" aria-label="Объекты этажа">
@@ -143,7 +155,7 @@ export function Editor({ ctl, project, preset, onHome }: { ctl: ProjectControlle
         live={liveScene} onSelect={setSelected} onUnavailable={() => { setSceneFailed(true); setViewMode('2d'); }} /></Suspense> :
       <Schematic project={project} level={level} selected={selected} onSelect={setSelected} water={water} control={control} overlay={overlay.revision === project.revision ? overlay : undefined} />}
 
-        <SimulationPanel project={project} preset={preset} onLive={viewMode === '3d' ? setLiveScene : undefined} onFocus={(id) => {
+        <SimulationPanel project={project} preset={preset} artifacts={artifacts} onArtifacts={onArtifacts} onLive={viewMode === '3d' ? setLiveScene : undefined} onFocus={(id) => {
           const focus = project.components.find((c) => c.id === id);
           if (focus) { setLevel(focus.level); setSelected(id); setOverlay({}); }
         }} />

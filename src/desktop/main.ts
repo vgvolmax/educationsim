@@ -2,6 +2,7 @@ import { appendFileSync, mkdirSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { app, BrowserWindow, protocol, session, shell } from 'electron';
 import { appUrl, isProductUrl } from './policy';
+import { attachWorkspaceBridge } from './workspace-bridge';
 import { installAppProtocol } from './protocol';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -58,8 +59,10 @@ if (!app.requestSingleInstanceLock()) {
     window = new BrowserWindow({
       title: 'EducationSim', width: 1200, height: 800,
       backgroundColor: '#f5f1e8',
-      webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false },
+      webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false,
+        preload: join(__dirname, 'workspace-preload.cjs') },
     });
+    attachWorkspaceBridge(window, devUrl || appUrl);
     window.on('closed', () => { window = undefined; });
     window.webContents.on('will-navigate', (event) => event.preventDefault());
     window.webContents.on('will-redirect', (event) => event.preventDefault());

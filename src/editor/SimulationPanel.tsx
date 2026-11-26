@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { compileLiveScenario } from '../project/live-scenario';
 import type { TemplateId } from '../project/templates';
 import type { ProjectDocument } from '../project/types';
 import { captureFrame } from '../simulation/comparison';
-import type { SimulationCapture } from '../simulation/comparison';
+import type { ProjectArtifacts } from '../storage/project-transfer';
+import type { Dispatch, SetStateAction } from 'react';
+import type { SimulationRecord } from '../simulation/replay';
 import type { SimulationCommand, SimulationScenario } from '../simulation/engine-types';
 import type { SessionView, SimulationSpeed } from '../simulation/session';
 import { Comparison, RunHistory } from '../views/graph/RunHistory';
@@ -18,8 +20,8 @@ const modes: Record<Client['state']['mode'], string> = {
   idle: 'Не подготовлен', loading: 'Подготавливается', paused: 'На паузе', running: 'Выполняется', stopped: 'Остановлен', stalled: 'Связь с расчётом потеряна',
 };
 
-export function SimulationPanel({ project, preset, onFocus, onLive }: {
-  project: ProjectDocument; preset?: TemplateId; onFocus(id: string): void; onLive?(live: SceneLive | null): void;
+export function SimulationPanel({ project, preset, artifacts, onArtifacts, onFocus, onLive }: {
+  project: ProjectDocument; preset?: TemplateId; artifacts: ProjectArtifacts; onArtifacts: Dispatch<SetStateAction<ProjectArtifacts>>; onFocus(id: string): void; onLive?(live: SceneLive | null): void;
 }) {
   const [run, setRun] = useState<Run | null>(null);
   const [view, setView] = useState<Client['state'] | null>(null);
@@ -27,7 +29,8 @@ export function SimulationPanel({ project, preset, onFocus, onLive }: {
   const [notes, setNotes] = useState<string[]>([]);
   const [branch, setBranch] = useState('');
   const [speed, setSpeed] = useState<number | null>(null);
-  const [a, setA] = useState<SimulationCapture | null>(null), [b, setB] = useState<SimulationCapture | null>(null);
+  const { a, b } = artifacts.captures;
+  const recorded = useRef<SimulationRecord | null>(null);
   const [frames, setFrames] = useState<readonly SessionView[]>([]);
   const current = run?.scenario.system.projectId === project.projectId && run.scenario.system.projectRevision === project.revision ? run : null;
   useEffect(() => {
@@ -69,6 +72,13 @@ export function SimulationPanel({ project, preset, onFocus, onLive }: {
   }
   function command(value: SimulationCommand) { current?.client.send({ kind: 'command', command: value }); }
 
+  useEffect(() => {
+    const exported = current ? view?.record : null;
+    if (!exported || exported === recorded.current) return;
+    recorded.current = exported;
+    onArtifacts((all) => ({ ...all, records: [...all.records.slice(-3), exported] }));
+  }, [current, view?.record, onArtifacts]);
+
   const frame = current ? view?.view : null;
   useEffect(() => {
     if (!onLive) return;
@@ -92,7 +102,7 @@ export function SimulationPanel({ project, preset, onFocus, onLive }: {
     const atSameTime = side === 'b' && a?.revision !== project.revision && a
       ? frames.find((f) => f.snapshot.tick === a.tick) : undefined;
     const captured = captureFrame(current.scenario, atSameTime ?? frame);
-    if (captured) (side === 'a' ? setA : setB)(captured);
+    if (captured) onArtifacts((all) => ({ ...all, captures: { ...all.captures, [side]: captured } }));
   }
   return <section aria-label="Расчёт" className="simulation-panel">
     <div className="simulation-title"><div><p className="eyebrow">Учебный режим</p><h2>Расчёт и эксперимент</h2></div>
@@ -141,6 +151,9 @@ export function SimulationPanel({ project, preset, onFocus, onLive }: {
     <div className="simulation-actions">
       <button disabled={!activeFrame} onClick={() => pin('a')}>Зафиксировать А</button>
       <button disabled={!activeFrame} onClick={() => pin('b')}>Зафиксировать Б</button>
+      <button disabled={!current || !frame || frame.stale || frame.snapshot.tick <= 0} onClick={() => current?.client.send({ kind: 'record' })}>
+        Сохранить запись прогона</button>
+      {artifacts.records.length > 0 && <small>Сохранённых записей: {artifacts.records.length}</small>}
       {a && <small>А: тик {a.tick}, ред. {a.revision}</small>}{b && <small>Б: тик {b.tick}, ред. {b.revision}</small>}
     </div>
     {a && b && <Comparison a={a} b={b} />}
