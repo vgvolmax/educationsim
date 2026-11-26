@@ -21,7 +21,7 @@ const e = z.object({ id: s, tick: nonnegative, componentId: s, kind: z.enum(['li
 const capture = z.strictObject({ projectId: s, revision: nonnegative, tick: nonnegative, start: z.unknown(),
   components: z.array(z.object({ id: s, typeId: s, catalogSnapshotId: s.nullable() })).max(500),
   readings: z.array(z.object({ id: s, unit: z.string().max(20), value: point.nullable() })).max(10000), events: z.array(e).max(2048) });
-const commands = z.discriminatedUnion('kind', [
+export const simulationCommandSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('set-valve'), channelId: s, opening: z.number().min(0).max(1) }),
   z.strictObject({ kind: z.literal('manual'), actuatorId: s, demand: z.boolean() }),
   z.strictObject({ kind: z.literal('power'), powered: z.boolean() }),
@@ -45,7 +45,7 @@ const scenario = z.custom<SimulationScenario>((raw: unknown) => {
     Array.isArray(v.sources) && typeof v.outdoorC === 'number';
 });
 const record = z.strictObject({ version: z.literal(recordingVersion), scenario, untilTick: nonnegative.max(maxReplayTicks),
-  commands: z.array(z.strictObject({ tick: z.int().positive(), seq: nonnegative, command: commands })).max(maxCommands),
+  commands: z.array(z.strictObject({ tick: z.int().positive(), seq: nonnegative, command: simulationCommandSchema })).max(maxCommands),
 }).refine((r) => r.commands.every((cmd, i) => cmd.tick <= r.untilTick &&
   (!i || cmd.tick >= r.commands[i-1]!.tick && cmd.seq > r.commands[i-1]!.seq)));
 const envelope = z.strictObject({

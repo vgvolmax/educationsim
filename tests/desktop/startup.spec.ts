@@ -156,6 +156,14 @@ test('launches the packaged app offline, retains storage and rejects a second in
     await expect(page.locator('[data-room]')).toHaveCount(2);
     await page.getByRole('button', { name: 'Каталог ВОЛМАКС', exact: true }).click();
     await expect(page.getByText('Версия: packaged-catalog')).toBeVisible();
+    await page.getByRole('button', { name: 'Старт' }).click();
+    await page.getByRole('button', { name: /L01 · Подача, петля и обратка/ }).click();
+    await page.getByRole('button', { name: 'Рассчитать один тик', exact: true }).click();
+    await expect(page.getByText('Модельный тик: 1')).toBeVisible();
+    await page.getByRole('button', { name: 'Найти подачу' }).click();
+    await page.getByRole('button', { name: 'Найти петлю пола' }).click();
+    await page.getByRole('button', { name: 'Найти обратку' }).click();
+    await expect(page.getByText('Урок пройден.', { exact: true })).toBeVisible();
     const read = await page.evaluate(() => new Promise((resolve, reject) => {
       const request = indexedDB.open('desktop-smoke', 1);
       request.onerror = () => reject(request.error);

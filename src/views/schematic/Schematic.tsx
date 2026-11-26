@@ -3,8 +3,8 @@ import { rectangleOf } from '../../project/editor-geometry';
 import type { Point2, ProjectDocument } from '../../project/types';
 
 type Props = { project: ProjectDocument; level: number; selected: string | null;
-  onSelect(id: string): void; water: boolean; control: boolean; overlay?: RouteOverlay };
-export function Schematic({ project, level, selected, onSelect, water, control, overlay }: Props) {
+  onSelect(id: string): void; selectedLink?: string | null; onLinkSelect?(id: string): void; water: boolean; control: boolean; overlay?: RouteOverlay };
+export function Schematic({ project, level, selected, onSelect, selectedLink, onLinkSelect, water, control, overlay }: Props) {
   const rooms = project.rooms.filter((room) => room.level === level);
   const components = project.components.filter((component) => component.level === level);
   const lookup = new Map(project.components.map((c) => [c.id, c]));
@@ -41,7 +41,8 @@ export function Schematic({ project, level, selected, onSelect, water, control, 
             y={rectangle ? rectangle.z + rectangle.depthM - .16 : room.outline[0]!.z + .25}>{room.name}</text>
         </g>; })}
         {lines.map(({ id, points, domain, approximate }) => <polyline key={domain + id} data-link={id}
-          points={pointList(points)} className={'plan-link ' + domain + (approximate ? ' approximate' : '')}><title>{id}</title></polyline>)}
+          points={pointList(points)} onClick={onLinkSelect ? () => onLinkSelect(id) : undefined}
+          className={'plan-link ' + domain + (approximate ? ' approximate' : '') + (selectedLink === id ? ' lesson-identified' : '')}><title>{id}</title></polyline>)}
         {overlay?.points?.length && <polyline data-route-preview points={pointList([...overlay.points])} className="route-preview"><title>Черновик трассы</title></polyline>}
         {overlay?.mark && <circle cx={overlay.mark.x} cy={overlay.mark.z} r=".1" className="route-mark"><title>Место ошибки трассировки</title></circle>}
         {components.map((c) => <g key={c.id} onClick={() => onSelect(c.id)} className="plan-equipment">
