@@ -9,10 +9,14 @@ import { useAutosave } from '../storage/useAutosave';
 import { cloneWorkspace, emptyArtifacts } from '../storage/project-transfer';
 import type { Workspace } from '../storage/project-transfer';
 import type { SavedProject } from '../storage/projects';
+import { LessonLauncher } from '../lessons/LessonLauncher';
+import { LessonPanel } from '../lessons/LessonPanel';
+import type { PreparedLesson } from '../lessons/authoring';
 import './shell.css';
 
 export function App() {
   const ctl = useProject();
+  const [lesson, setLesson] = useState<PreparedLesson | null>(null);
   const [editing, setEditing] = useState(false);
   const [preset, setPreset] = useState<TemplateId | undefined>();
   const [artifacts, setArtifacts] = useState(emptyArtifacts);
@@ -56,7 +60,7 @@ export function App() {
   }, []);
 
   function pick(next: Workspace, saved: SavedProject | null) {
-    save.select(saved); ctl.open(next.project); setPreset(next.preset);
+    setLesson(null); save.select(saved); ctl.open(next.project); setPreset(next.preset);
     setArtifacts({ captures: next.captures, records: next.records }); setEditing(true);
   }
   async function launch(template?: TemplateId) {
@@ -85,6 +89,10 @@ export function App() {
       if (!workspace || save.state.saving) return;
       pick(cloneWorkspace(workspace, editorId('project')), null);
     }} />;
+  if (lesson) return <>{save.closeToken && tools}<LessonPanel key={lesson.definition.id} lesson={lesson}
+    onBack={() => setLesson(null)} onEditor={(seed) => {
+      void save.flush().then((committed) => { if (committed) pick({ ...seed, ...emptyArtifacts() }, null); });
+    }} /></>;
   if (editing && ctl.history) return <>{tools}<Editor project={ctl.history.current} preset={preset} ctl={ctl}
     artifacts={artifacts} onArtifacts={setArtifacts} onHome={() => setEditing(false)} /></>;
   return (
@@ -112,6 +120,7 @@ export function App() {
           return result.ok && <button key={id} onClick={() => { void launch(id); }}>{result.value.title}</button>;
         })}</div>
       </section>
+      <LessonLauncher launch={setLesson} />
       <footer>
         <p role="status">{runtime}</p>
         <a href="https://volmax.ru/catalog/" target="_blank" rel="noreferrer">Каталог ВОЛМАКС ↗</a>

@@ -60,6 +60,13 @@ self.addEventListener('message', ({ data }: MessageEvent<WorkerRequest>) => {
       case 'pause': session.pause(); stopTimer(); break;
       case 'visibility': session.visibility(data.visible); if (!data.visible) stopTimer(); break;
       case 'step': session.stepOnce(); break;
+      case 'advance':
+        if (!Number.isSafeInteger(data.ticks) || data.ticks <= 0 || data.ticks > 120 || session.view.mode !== 'paused') {
+          post({ kind: 'error', key, requestId, diagnostics: [invalid('worker_ticks', 'Допустимо до 120 тиков остановленного прогона.')] });
+          return;
+        }
+        for (let tick = 0; tick < data.ticks; tick++) session.stepOnce();
+        break;
       case 'speed': session.setSpeed(data.speed); lastPulse = performance.now(); break;
       case 'reset': session.reset(); stopTimer(); publish(data.requestId, true); return;
       case 'record': post({ kind: 'record', key, requestId: data.requestId, record: session.record() }); return;

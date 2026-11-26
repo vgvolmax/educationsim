@@ -1,0 +1,22 @@
+.lesson-bench { color: #183331; padding: 1.1rem clamp(.8rem, 3vw, 2.25rem); }
+.lesson-bench header { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: end; gap: .75rem; }
+.lesson-bench header h1 { font-size: clamp(1.5rem,3vw,2.7rem); margin: .25rem 0 0; }
+.lesson-bench header .eyebrow { border: 0; padding: 0; margin: 0; }
+.lesson-goal { margin: .95rem 0; font-size: 1.05rem; }
+.lesson-grid { display: grid; grid-template-columns: minmax(0, 2.7fr) minmax(13rem, 1fr); gap: .9rem; }
+.lesson-grid .drawing { padding: .45rem 0; }
+.lesson-case, .lesson-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.lesson-case { justify-content: space-between; }
+.lesson-actions { padding: .6rem 0; }
+.lesson-actions button { background: #fbfaf5; }
+.lesson-actions button[aria-pressed=true] { background: #ddebe3; border-color: #155752; }
+.lesson-rubric { padding: .7rem .9rem; background: #fbfaf5; border: 1px solid #c5bcab; }
+.lesson-rubric h2 { margin: 0; font-size: 1.14rem; }
+.lesson-rubric ul { padding-left: 1.05rem; }
+.lesson-hint, .lesson-warning { background: #f8ece0; border-left: 3px solid #a35135; padding: .45rem .6rem; }
+.lesson-passed { border-left: 3px solid #155752; padding-left: .45rem; font-weight: 700; }
+.lesson-author { margin-top: .8rem; padding: .5rem; border: 1px solid #c5bcab; }
+.lesson-author input { max-width: 100%; }
+.lesson-bench .plan-link { cursor: pointer; }
+.lesson-bench .plan-link.lesson-identified { stroke: #ac4e31; stroke-width: .082; }
+@media (max-width: 720px) {.lesson-grid {grid-template-columns: minmax(0, 1fr);}}

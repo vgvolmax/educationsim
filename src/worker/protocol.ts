@@ -8,6 +8,7 @@ type Keyed = { key: RunKey; requestId: number };
 export type WorkerRequest = Keyed & (
   | { kind: 'load'; scenario: SimulationScenario }
   | { kind: 'resume' | 'pause' | 'step' | 'reset' | 'record' }
+  | { kind: 'advance'; ticks: number }
   | { kind: 'visibility'; visible: boolean }
   | { kind: 'speed'; speed: SimulationSpeed }
   | { kind: 'command'; command: SimulationCommand }
