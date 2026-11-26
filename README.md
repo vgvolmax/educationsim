@@ -16,6 +16,6 @@
 - `npm run dev` запускает окно Electron с отдельным профилем `EducationSim-dev`.
 - `npm run check` проверяет ESLint, TypeScript, модульные тесты и сборку интерфейса.
 - `npx playwright install chromium`, затем `npm run test:e2e` проверяют оболочку в браузере.
-- На Windows: `npm run package:win` создаёт ZIP в `out/make`. Распакуйте ZIP целиком; задайте в PowerShell `$env:EDUCATIONSIM_DESKTOP_EXE` абсолютным путём до распакованного `EducationSim.exe` и запустите `npm run test:desktop`. Проверка использует отдельный временный профиль, эмулирует офлайн до открытия окна и повторно запускает приложение. Офлайн-приёмка на рабочем ПК остаётся отдельной проверкой выпуска.
+- На Windows: `npm run package:win` создаёт ZIP в `out/make`. Распакуйте ZIP целиком; задайте в PowerShell `$env:EDUCATIONSIM_DESKTOP_EXE` абсолютным путём до распакованного `EducationSim.exe` и запустите `npm run test:desktop`. Проверка использует отдельный временный профиль, блокирует HTTP(S) до открытия окна и повторно запускает приложение. Офлайн-приёмка на рабочем ПК остаётся отдельной проверкой выпуска.
 
 A01 содержит только техническую оболочку: редактор и расчёт здесь ещё недоступны. В Windows рабочий профиль сборки находится в `%APPDATA%\EducationSim`, журнал запуска — в `startup.log` этого профиля.

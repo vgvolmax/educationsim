@@ -18,7 +18,11 @@ test('launches the packaged app offline, retains storage and rejects a second in
     const page = await app.firstWindow();
     await expect(page.getByRole('heading', { name: 'Волмакс · Тёплый пол' })).toBeVisible();
     expect(page.url()).toBe('app://educationsim/');
-    await expect.poll(() => page.evaluate(() => navigator.onLine)).toBe(false);
+    const networkError = await app.evaluate(async ({ net }) => {
+      try { await net.fetch('https://example.invalid/'); return null; }
+      catch (error) { return (error as Error).message; }
+    });
+    expect(networkError).toContain('ERR_BLOCKED_BY_CLIENT');
     await expect(page.getByRole('status')).toHaveText('Автономная среда готова');
     expect(await page.evaluate(async () => (await fetch('/runtime.json')).json())).toEqual({ format: 1 });
     const blocked = await app.evaluate(async ({ net }) => {

@@ -44,7 +44,12 @@ if (!app.requestSingleInstanceLock()) {
     session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
     session.defaultSession.setPermissionCheckHandler(() => false);
     if (useTestProfile && process.env.EDUCATIONSIM_TEST_OFFLINE === '1') {
-      session.defaultSession.enableNetworkEmulation({ offline: true });
+      // Block HTTP(S) before navigation. navigator.onLine reports network-interface
+      // state and is not evidence that packaged resources can run without requests.
+      session.defaultSession.webRequest.onBeforeRequest(
+        { urls: ['http://*/*', 'https://*/*'] },
+        (_details, callback) => callback({ cancel: true }),
+      );
     }
 
     const devUrl = MAIN_WINDOW_VITE_DEV_SERVER_URL;
