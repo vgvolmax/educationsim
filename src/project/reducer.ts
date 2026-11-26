@@ -1,5 +1,6 @@
 import { parseProject } from './document';
 import { editRectangularRoom } from './editor-geometry';
+import { editInspector } from './inspector-edits';
 import type { ComponentRegistry } from './registry';
 import { checkConnection, connectionDiagnostic } from './topology';
 import type { ComponentInstance, ControlLink, Diagnostic, ProjectCommand, ProjectDocument, ProjectEdit, ReplaceComponentCommand, Result } from './types';
@@ -79,6 +80,10 @@ export function previewReplacement(
 
 function applyEdit(project: ProjectDocument, command: ProjectEdit, registry: ComponentRegistry): Result<ProjectDocument> {
   switch (command.kind) {
+    case 'set_component_parameters':
+    case 'set_room_start':
+    case 'set_loop_route':
+      return editInspector(project, command);
     case 'add_rectangular_room':
     case 'resize_rectangular_room':
       return editRectangularRoom(project, command);

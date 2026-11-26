@@ -1,9 +1,10 @@
+import type { RouteOverlay } from '../../editor/RouteTools';
 import { rectangleOf } from '../../project/editor-geometry';
 import type { Point2, ProjectDocument } from '../../project/types';
 
 type Props = { project: ProjectDocument; level: number; selected: string | null;
-  onSelect(id: string): void; water: boolean; control: boolean };
-export function Schematic({ project, level, selected, onSelect, water, control }: Props) {
+  onSelect(id: string): void; water: boolean; control: boolean; overlay?: RouteOverlay };
+export function Schematic({ project, level, selected, onSelect, water, control, overlay }: Props) {
   const rooms = project.rooms.filter((room) => room.level === level);
   const components = project.components.filter((component) => component.level === level);
   const lookup = new Map(project.components.map((c) => [c.id, c]));
@@ -41,6 +42,8 @@ export function Schematic({ project, level, selected, onSelect, water, control }
         </g>; })}
         {lines.map(({ id, points, domain, approximate }) => <polyline key={domain + id} data-link={id}
           points={pointList(points)} className={'plan-link ' + domain + (approximate ? ' approximate' : '')}><title>{id}</title></polyline>)}
+        {overlay?.points?.length && <polyline data-route-preview points={pointList([...overlay.points])} className="route-preview"><title>Черновик трассы</title></polyline>}
+        {overlay?.mark && <circle cx={overlay.mark.x} cy={overlay.mark.z} r=".1" className="route-mark"><title>Место ошибки трассировки</title></circle>}
         {components.map((c) => <g key={c.id} onClick={() => onSelect(c.id)} className="plan-equipment">
           <circle data-component={c.id} cx={c.position.x} cy={c.position.z} r=".16" className={selected === c.id ? 'selected' : ''} />
           <text x={c.position.x} y={c.position.z + .005} className="equipment-index">{(orders.get(c.id) ?? 0) + 1}</text><title>{c.id}</title>
