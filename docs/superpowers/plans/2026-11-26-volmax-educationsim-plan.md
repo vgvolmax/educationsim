@@ -174,11 +174,13 @@
 
 **После:** B02–B06. **Файлы:** `src/simulation/pressure.ts`, `src/simulation/service.ts`, `src/simulation/faults.ts`, `tests/simulation/pressure.test.ts`, `tests/simulation/faults.test.ts`.
 
-- [ ] Добавить `tank_matches_v06`, `relief_event_tracks_lost_water`, `missing_tank_reaches_model_boundary`, `high_limit_disables_target_next_tick`, `trapped_air_and_dirty_filter_recover_after_service`, `service_energy_and_mass_ledger_closes`, `no_numeric_pressure_after_model_boundary`, `latched_limit_requires_reset_after_condition_clears`.
-- [ ] Реализовать расчёт давления с баком и границы применимости. Добавить переполнение, сброс, заполнение, воздух, засор и отказ датчика/привода. Критические события переводят состояние в ограниченный режим или останавливают прогон с диагностикой.
-- [ ] Запустить `npm run test -- tests/simulation/pressure.test.ts tests/simulation/faults.test.ts`. Зафиксировать `feat: simulate hydronic safety and service faults`.
+- [x] Добавить `tank_matches_v06`, `relief_event_tracks_lost_water`, `missing_tank_reaches_model_boundary`, `high_limit_disables_target_next_tick`, `trapped_air_and_dirty_filter_recover_after_service`, `service_energy_and_mass_ledger_closes`, `no_numeric_pressure_after_model_boundary`, `latched_limit_requires_reset_after_condition_clears`.
+- [x] Реализовать расчёт давления с баком и границы применимости. Добавить переполнение, сброс, заполнение, воздух, засор и отказ датчика/привода. Критические события переводят состояние в ограниченный режим или останавливают прогон с диагностикой.
+- [x] Запустить `npm run test -- tests/simulation/pressure.test.ts tests/simulation/faults.test.ts`. Зафиксировать `feat: simulate hydronic safety and service faults`.
 
 [Контракт давления, обслуживания и отказов](../specs/2026-11-26-service-pressure-contract.md).
+
+Подтверждение B07: [PR #15](https://github.com/vgvolmax/educationsim/pull/15), [проверки браузера и Windows](https://github.com/vgvolmax/educationsim/actions/runs/45870013514).
 
 ### B08. Собрать Engine, повтор записей и Worker
 
@@ -187,6 +189,8 @@
 - [ ] Написать `replay_matches_v08`, `tick_equals_one_second_at_any_speed`, `paused_state_does_not_advance`, `drops_stale_revision_snapshot`, `worker_reports_stall_without_faking_sim_time`.
 - [ ] Объединить предыдущие модели в один фиксированный порядок тика. Запись содержит исходное состояние и команды. При сворачивании окна и падении Worker фиксировать паузу/последнее состояние. Максимум буфера снимков определяется лимитами графиков и записи в ТЗ.
 - [ ] Запустить `npm run test -- tests/simulation tests/worker`. Зафиксировать `feat: integrate deterministic engine and simulation worker`.
+
+[Контракт расчётного тика, записи и Worker](../specs/2026-11-26-engine-worker-contract.md).
 
 **Проверяемый результат этапов A+B:** расчёт нескольких параллельных ветвей, температуры, действий автоматики и отказов запускается в тестовом стенде без браузера. V01–V10 и V12 проходят. V11 проверяется на контрольной схеме взаимодействия насосов в C02 и на сравнении скоростей и направлений анимации в D04. Числовые допуски подтверждаются техническим экспертом до приёмки учебного контента.
 
