@@ -102,11 +102,13 @@
 
 **После:** A03–A04. **Файлы:** `src/simulation/types.ts`, `src/simulation/compile.ts`, `src/simulation/fluids.ts`, `tests/simulation/compile.test.ts`.
 
-- [ ] Создать `compiles_two_parallel_loops`, `blocks_open_operating_port`, `isolated_disabled_branch_has_zero_flow`, `heat_exchanger_keeps_fluid_domains_separate`.
-- [ ] Раскрывать вложенные узлы, каналы, порты и карту происхождения. Назначить опорные узлы, тепловые связи и опорный профиль жидкости. Компилятор отличает блокирующую ошибку от допустимого учебного предупреждения.
-- [ ] Запустить `npm run test -- tests/simulation/compile.test.ts`. Зафиксировать `feat: compile projects to calculation networks`.
+- [x] Создать `compiles_two_parallel_loops`, `blocks_open_operating_port`, `isolated_disabled_branch_has_zero_flow`, `heat_exchanger_keeps_fluid_domains_separate`.
+- [x] Раскрывать вложенные узлы, каналы, порты и карту происхождения. Назначить опорные узлы, тепловые связи и опорный профиль жидкости. Компилятор отличает блокирующую ошибку от допустимого учебного предупреждения.
+- [x] Запустить `npm run test -- tests/simulation/compile.test.ts`. Зафиксировать `feat: compile projects to calculation networks`.
 
 [Контракт расчётной сети](../specs/2026-11-26-simulation-network-contract.md).
+
+Подтверждение B01: [PR #9](https://github.com/vgvolmax/educationsim/pull/9), [проверки браузера и Windows](https://github.com/vgvolmax/educationsim/actions/runs/45859149024).
 
 ### B02. Рассчитать гидравлическую сеть и рабочую точку насоса
 
@@ -115,6 +117,8 @@
 - [ ] Добавить `parallel_equal_and_unequal_match_v01_v02`, `pump_intersection_matches_closed_form`, `node_balance_matches_v09`, `disconnected_loop_has_no_forced_flow`, `v10_pump_saturates_at_2_lpm_and_20_kpa`, `v10_closed_network_keeps_shutoff_head`, `v10_off_pump_allows_only_compatible_passive_flow`.
 - [ ] Реализовать `solveHydraulics(system: CompiledSystem, inputs: HydraulicInputs): Result<HydraulicSnapshot>`. Использовать баланс потоков и уравнения потерь, сохранять профиль сопротивления, рабочую точку и направление потока. Использовать p + ρgz для учёта высоты в контуре. Учитывать насыщение при постоянном перепаде, пассивное сопротивление остановленного насоса и закрытие внутреннего обратного клапана. Ограничить итерации и области использования кривых.
 - [ ] Запустить `npm run test -- tests/simulation/hydraulics.test.ts`. Зафиксировать `feat: solve hydronic network and pump operating point`.
+
+[Контракт решателя давления и расхода](../specs/2026-11-26-hydraulic-solver-contract.md).
 
 ### B03. Добавить направленные клапаны, балансировку и байпас
 
