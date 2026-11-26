@@ -3,7 +3,7 @@ import builtin from '../../content/catalog/public-v1.json';
 import { parseCatalogJson, validateCatalog } from './catalog';
 import type { CatalogPackage } from './catalog';
 import { normalizeOfferCsv } from './import';
-import { activateLocalCatalog, readActiveCatalog } from './local-catalog';
+import { activateLocalCatalog, listLocalCatalogs, readActiveCatalog, selectCatalogRelease } from './local-catalog';
 
 const parsed = validateCatalog(builtin);
 if (!parsed.ok) throw new Error('Некорректный встроенный каталог: ' + parsed.diagnostics[0].message);
@@ -11,6 +11,7 @@ const bundled = parsed.value;
 
 export function useCatalog() {
   const [active, setActive] = useState(bundled);
+  const [archive, setArchive] = useState<string[]>([]);
   const [pending, setPending] = useState<CatalogPackage | null>(null);
   const [loading, setLoading] = useState(true);
   const [writing, setWriting] = useState(false);
@@ -19,11 +20,14 @@ export function useCatalog() {
   const generation = useRef(0);
   useEffect(() => {
     let disposed = false;
-    void readActiveCatalog(indexedDB).then((saved) => {
-      if (disposed || !saved) return;
-      setActive(saved); setSource('local');
-    }).catch(() => { if (!disposed) setError('Локальный выпуск недоступен. Показан встроенный.'); })
-      .finally(() => { if (!disposed) setLoading(false); });
+    void Promise.allSettled([listLocalCatalogs(indexedDB), readActiveCatalog(indexedDB)]).then(([known, saved]) => {
+      if (disposed) return;
+      if (known.status === 'fulfilled') setArchive(known.value);
+      else setError('Не удалось прочитать архив выпусков.');
+      if (saved.status === 'fulfilled' && saved.value) { setActive(saved.value); setSource('local'); }
+      else if (saved.status === 'rejected') setError('Локальный выпуск недоступен или несовместим. Показан встроенный; файлы не удалены.');
+      setLoading(false);
+    });
     return () => { disposed = true; generation.current++; };
   }, []);
   async function preview(file: File | undefined, releaseId: string, date: string) {
@@ -46,9 +50,19 @@ export function useCatalog() {
     try {
       await activateLocalCatalog(indexedDB, pending, bundled.releaseId);
       setActive(pending); setSource('local'); setPending(null);
+      setArchive((ids) => [...new Set([...ids, pending.releaseId])].sort());
     } catch (e) { setError(e instanceof Error ? e.message : 'Сохранение не завершилось.'); }
     finally { setWriting(false); }
   }
+  async function selectSaved(id: string | null) {
+    if (loading || writing) return;
+    generation.current++; setWriting(true); setError('');
+    try {
+      const chosen = await selectCatalogRelease(indexedDB, id);
+      setActive(chosen ?? bundled); setSource(chosen ? 'local' : 'embedded'); setPending(null);
+    } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось переключить выпуск.'); }
+    finally { setWriting(false); }
+  }
   function dismiss() { generation.current++; setPending(null); setError(''); }
-  return { active, source, pending, loading, writing, error, preview, activate, dismiss };
+  return { active, source, archive, pending, loading, writing, error, preview, activate, selectSaved, dismiss };
 }

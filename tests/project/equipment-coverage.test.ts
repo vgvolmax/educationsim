@@ -134,3 +134,42 @@ test('a connected pump-mixing assembly uses the real pump and complementary bran
   expect(fullHot['component:mixer:hot-valve']?.flowM3s).toBeGreaterThan(0);
   expect(fullHot['component:mixer:delivery']?.flowM3s).toBeCloseTo(fullHot['component:mixer:hot-valve']!.flowM3s, 11);
 });
+
+test('public training manifold profiles from three to twelve circuits have distinct, matched ports', () => {
+  for (let ways = 3; ways <= 12; ways++) {
+    const profile = equipmentRegistry.get('training-manifold-' + ways + '-way');
+    expect(profile?.variant).toBe('pair-flowmeters');
+    expect(profile?.component.defaultParameters.outlets).toBe(ways);
+    expect(profile?.component.ports).toHaveLength(2 + ways * 2);
+    expect(profile?.component.hydraulics?.portNodes['supply-' + ways]).toBe('supply');
+    expect(profile?.component.hydraulics?.portNodes['return-' + ways]).toBe('return');
+  }
+});
+
+test('a four-way teaching manifold can feed and individually close real simulated floor circuits', async () => {
+  const { createTemplateProject } = await import('../../src/project/templates');
+  const { compileLiveScenario } = await import('../../src/project/live-scenario');
+  const { createSession } = await import('../../src/simulation/session');
+  const project = createTemplateProject('direct', 'four-way-qa');
+  if (!project.ok) throw new Error(JSON.stringify(project.diagnostics));
+  const p = project.value;
+  p.components.find(({ id }) => id === 'manifold')!.typeId = 'training-manifold-4-way';
+  for (const i of [3, 4]) {
+    const inlet = 'supply-' + i, outlet = 'return-' + i, id = 'pipe-' + i;
+    const pipe = p.hydronicLinks.find(({ id }) => id === 'pipe-a')!;
+    p.hydronicLinks.push({ ...pipe, id, from: { ...pipe.from, portId: inlet }, to: { ...pipe.to, portId: outlet } });
+    const route = p.loopRoutes[0]!;
+    p.loopRoutes.push({ ...route, id: 'loop-' + i, linkId: id, points: route.points.map((v) => ({ ...v, z: v.z + i * .3 })) });
+  }
+  const run = compileLiveScenario(p, 'direct');
+  if (!run.ok) throw new Error(JSON.stringify(run.diagnostics));
+  const engine = createSession(run.value);
+  if (!engine.ok) throw new Error(JSON.stringify(engine.diagnostics));
+  engine.value.stepOnce();
+  const read = (id: string) => engine.value.view.snapshot.hydraulics?.channels['link:' + id]?.flowM3s;
+  for (const id of ['pipe-a', 'pipe-b', 'pipe-3', 'pipe-4']) expect(read(id)).toBeGreaterThan(0);
+  expect(engine.value.command({ kind: 'set-valve', channelId: 'link:pipe-4', opening: 0 })).toBe(true);
+  engine.value.stepOnce();
+  expect(read('pipe-4')).toBe(0);
+  expect(read('pipe-3')).toBeGreaterThan(0);
+});

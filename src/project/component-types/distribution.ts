@@ -15,7 +15,20 @@ const pumpSettings = { maxHeadPa: n('Напор на нулевом расход
   mode: c('Режим', ['fixed-speed', 'constant-pressure'], 'fixed-speed'),
   targetPa: n('Уставка перепада', 'Па', 100, 250000, 18000),
   faceToFaceM: n('Монтажная длина', 'м', .05, .5, .13) };
-const outletCount = (count: 1 | 2) => n('Число выводов этой схемы', 'шт.', count, count, count);
+const outletCount = (count: number) => n('Число выводов этой схемы', 'шт.', count, count, count);
+function multipleManifold(ways: number): EquipmentSpec {
+  const ports = [tube('feed'), tube('return'), ...Array.from({ length: ways }, (_, i) =>
+    [tube('supply-' + (i + 1)), tube('return-' + (i + 1))]).flat()];
+  return { id: 'training-manifold-' + ways + '-way', family: 'manifolds', variant: 'pair-flowmeters',
+    titleRu: 'Пара коллекторов с расходомерами · ' + ways + ' конт.',
+    shape: hydraulics(ports, {
+      portNodes: Object.fromEntries(ports.map(({ id }) => [id, id === 'feed' || id.startsWith('supply-') ? 'supply' : 'return'])),
+      channels: [],
+    }),
+    model: 'hydraulic:manifold', settings: { outlets: outletCount(ways),
+      spacingM: n('Шаг выводов', 'м', .025, .15, .05) }, readings: ['flow', 'pressure', 'installation'],
+    installation: 'Учебная сборка. Разметьте каждую петлю, явно заглушите незадействованные выводы. Не отождествлять с товарным артикулом.' };
+}
 const valveInput = signal('command', 'input', 'actuator');
 const regulatedManifold = hydraulics([tube('feed'), tube('return'), tube('supply-1'), tube('return-1')], {
   portNodes: { feed: 'supply', return: 'return', 'supply-1': 'regulated-out', 'return-1': 'return' },
@@ -82,6 +95,7 @@ export const distribution: EquipmentSpec[] = [
           maximumDeltaPa: n('Верхний перепад регулятора', 'Па', 10000, 150000, 40000) }) }, readings: ['flow', 'pressure', 'installation'],
       installation: 'Отдельные гребёнки подачи и обратки; разметить каждую петлю.',
     })),
+  ...Array.from({ length: 10 }, (_, i) => multipleManifold(i + 3)),
   ...([['pump', 'Циркуляционный насос', 'training-circulator'], ['direct-pump-group', 'Прямая насосная группа', undefined]] as const)
     .map(([variant, titleRu, id]): EquipmentSpec => ({ id, family: 'circulation', variant, titleRu, shape: passive('pump', [signal('power', 'input', 'relay')]),
       model: 'hydraulic:pump', settings: pumpSettings, readings: ['flow', 'pressure', 'status'],

@@ -97,6 +97,20 @@ export function CatalogPanel({ project, selected, level, ctl, onPlaced }: Props)
         <label>Файл обновления каталога<input type="file" accept=".json,.csv" disabled={catalog.writing}
           onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; void catalog.preview(file, csvId, new Date().toISOString().slice(0, 10)); }} /></label>
       </div>
+      {(catalog.archive.length > 0 || catalog.source === 'local') && <form className="catalog-tools"
+        key={catalog.source + ':' + current.releaseId} onSubmit={(event) => {
+          event.preventDefault();
+          const key = new FormData(event.currentTarget).get('release');
+          if (key === 'embedded') void catalog.selectSaved(null);
+          else if (typeof key === 'string' && key.startsWith('saved:')) void catalog.selectSaved(key.slice(6));
+        }}>
+        <label>Архив выпусков<select name="release" disabled={catalog.loading || catalog.writing}
+          defaultValue={catalog.source === 'embedded' ? 'embedded' : 'saved:' + current.releaseId}>
+          <option value="embedded">Встроенный выпуск</option>
+          {catalog.archive.map((id) => <option value={'saved:' + id} key={id}>{id}</option>)}
+        </select></label>
+        <button disabled={catalog.loading || catalog.writing}>Переключить выпуск</button>
+      </form>}
       {catalog.error && <div className="catalog-caution" role="alert"><strong>Обновление отклонено.</strong><p>{catalog.error}</p></div>}
       {catalog.pending && <div className="catalog-review">
         <p>Подготовлен выпуск {catalog.pending.releaseId}.</p>

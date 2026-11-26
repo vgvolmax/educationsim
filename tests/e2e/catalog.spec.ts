@@ -71,3 +71,26 @@ test('local_catalog_update_is_atomic_and_survives_restart', async ({ page }) => 
   await open(page);
   await expect(page.getByText('Версия: local-test')).toBeVisible();
 });
+
+test('changes active catalog without deleting either saved release and preserves the choice across restart', async ({ page }) => {
+  await open(page);
+  const data = { version: 1, releaseId: 'local-reference-rollback', publishedOn: '2026-11-26', offers: [], products: [], kits: [] };
+  await page.getByLabel('Файл обновления каталога').setInputFiles({
+    name: 'reference.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(data)),
+  });
+  await page.getByRole('button', { name: 'Активировать выпуск' }).click();
+  await expect(page.getByText('Версия: local-reference-rollback')).toBeVisible();
+  const release = page.getByLabel('Архив выпусков');
+  const select = page.getByRole('button', { name: 'Переключить выпуск' });
+  await expect(release).toBeVisible();
+  await release.selectOption('embedded');
+  await select.click();
+  await expect(page.getByText('Версия: volmax-public-20261126-v1')).toBeVisible();
+  await open(page);
+  await expect(page.getByText('Версия: volmax-public-20261126-v1')).toBeVisible();
+  await release.selectOption('saved:local-reference-rollback');
+  await select.click();
+  await expect(page.getByText('Версия: local-reference-rollback')).toBeVisible();
+  await open(page);
+  await expect(page.getByText('Версия: local-reference-rollback')).toBeVisible();
+});

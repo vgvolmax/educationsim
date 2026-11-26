@@ -62,3 +62,25 @@ test('sealed comparison survives an editor revision and aligns equal model time'
   await expect(page.getByText(/А: редакция 1, тик 1. Б: редакция 2, тик 1./)).toBeVisible();
   await expect(page.getByText(/Сняты: mount-.*training-wall-cabinet/)).toBeVisible();
 });
+
+test('a free experiment distinguishes a requested partial valve opening from its accepted next-tick value', async ({ page }) => {
+  await ready(page);
+  const meter = page.locator('[data-meter="link:pipe-a"]');
+  const select = page.getByLabel('Ветвь эксперимента');
+  await select.selectOption('link:pipe-a');
+  await page.getByRole('button', { name: 'Один шаг' }).click();
+  await expect(meter).toHaveText(/^[1-9]\d*,\d{2} л\/мин$/);
+  const baseline = await meter.textContent();
+  await page.getByLabel('Задать открытие, %').fill('45,5');
+  await page.getByRole('button', { name: 'Применить открытие' }).click();
+  await expect(page.getByText('Фактическое открытие: 100,0 %')).toBeVisible();
+  await expect(meter).toHaveText(baseline!);
+  await page.getByRole('button', { name: 'Один шаг' }).click();
+  await expect(page.getByText('Фактическое открытие: 45,5 %')).toBeVisible();
+  await expect(meter).not.toHaveText(baseline!);
+  await page.getByLabel('Задать открытие, %').fill('110');
+  await page.getByRole('button', { name: 'Применить открытие' }).click();
+  await expect(page.getByRole('alert')).toContainText('от 0 до 100');
+  await page.getByRole('button', { name: 'Один шаг' }).click();
+  await expect(page.getByText('Фактическое открытие: 45,5 %')).toBeVisible();
+});

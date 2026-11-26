@@ -19,6 +19,8 @@ export function LessonPanel({ lesson, onBack, onEditor }: Props) {
   const [highlight, setHighlight] = useState<string | null>(null);
   const [hint, setHint] = useState<number>(0);
   const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [review, setReview] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [, redraw] = useState(0);
   const clients = useRef(new Map<string, Client>());
@@ -27,6 +29,17 @@ export function LessonPanel({ lesson, onBack, onEditor }: Props) {
     [id, client.state.view ?? undefined]));
   const view = views[state.caseId];
   const grade = gradeLesson(lesson, state, views);
+  const assessed = lesson.definition.feedback === 'on-submit';
+  const showRubric = !assessed || submitted || review;
+  function displayReading(rule: typeof lesson.definition.criteria[number] | undefined, value: number | null | undefined) {
+    if (value === null) return ' · Нет данных';
+    if (value === undefined) return '';
+    const metric = rule && 'metric' in rule ? rule.metric : null;
+    const scale = metric === 'flow' ? 60000 : metric === 'opening' ? 100 : metric === 'pressure' ? .001 : 1;
+    const unit = metric === 'flow' ? ' л/мин' : metric === 'opening' ? ' %' : metric === 'pressure' ? ' кПа' :
+      metric === 'power' ? ' Вт' : ' °C';
+    return ' · ' + (value * scale).toFixed(2).replace('.', ',') + unit;
+  }
 
   useEffect(() => {
     const running = clients.current, stamps = new Map<string, Client['state']>();
@@ -64,6 +77,7 @@ export function LessonPanel({ lesson, onBack, onEditor }: Props) {
     }
     if (action.type === 'inspect') setHighlight(action.target);
     if (action.type === 'case') setHighlight(null);
+    if (assessed) { setSubmitted(false); setReview(false); setHint(0); }
     setState(applyLessonAction(state, action)); setError('');
   }
   function inspect(target: string) {
@@ -119,22 +133,27 @@ export function LessonPanel({ lesson, onBack, onEditor }: Props) {
       </section>
       <aside className="lesson-rubric">
         <h2>Проверка задания</h2>
-        <p role="status">{grade.passed ? 'Урок пройден.' : grade.status === 'partial' ? 'Частичный результат.' : 'Задание ещё не выполнено.'} {grade.count} из {grade.total}.</p>
-        {grade.passed && <p className="lesson-passed">Урок пройден.</p>}
-        <ul>{grade.rows.map((row) => {
-          const rule = lesson.definition.criteria.find((entry) => entry.id === row.id);
-          const metric = rule && 'metric' in rule ? rule.metric : null;
-          const scale = metric === 'flow' ? 60000 : metric === 'opening' ? 100 : metric === 'pressure' ? .001 : 1;
-          const unit = metric === 'flow' ? ' л/мин' : metric === 'opening' ? ' %' : metric === 'pressure' ? ' кПа' :
-            metric === 'power' ? ' Вт' : ' °C';
-          return <li key={row.id}><strong>{row.passed ? 'Да' : 'Ещё нет'}</strong> · {row.label}
-            {row.actual === null ? ' · Нет данных' : row.actual === undefined ? '' :
-              ' · ' + (row.actual * scale).toFixed(2).replace('.', ',') + unit}</li>;
-        })}</ul>
+        {showRubric ? <>
+          <p role="status">{grade.passed ? 'Урок пройден.' : grade.status === 'partial' ? 'Частичный результат.' : 'Задание ещё не выполнено.'} {grade.count} из {grade.total}.</p>
+          {grade.passed && <p className="lesson-passed">Урок пройден.</p>}
+          <ul>{grade.rows.map((row) => {
+            const rule = lesson.definition.criteria.find((entry) => entry.id === row.id);
+            return <li key={row.id}><strong>{row.passed ? 'Да' : 'Ещё нет'}</strong> · {row.label}{displayReading(rule, row.actual)}</li>;
+          })}</ul>
+        </> : <>
+          <p>Оценка появится после завершения попытки. Ниже только текущие измерения.</p>
+          <ul>{grade.rows.flatMap((row) => {
+            const rule = lesson.definition.criteria.find((entry) => entry.id === row.id);
+            return rule?.type === 'range' ?
+              [<li key={row.id}>{rule.caseId ? rule.caseId + ': ' : ''}{rule.target}{displayReading(rule, row.actual)}</li>] : [];
+          })}</ul>
+        </>}
         {Object.entries(state.basket).some(([, n]) => n > 0) && <p>Набор: {Object.entries(state.basket).filter(([, n]) => n > 0).map(([id, n]) => id + ' ×' + n).join(', ')}.</p>}
-        {!grade.passed && hint < lesson.definition.hints.length && <button onClick={() => setHint((n) => n + 1)}>Показать подсказку</button>}
+        {!assessed && !grade.passed && hint < lesson.definition.hints.length && <button onClick={() => setHint((n) => n + 1)}>Показать подсказку</button>}
         {lesson.definition.hints.slice(0, hint).map((text) => <p key={text} className="lesson-hint">{text}</p>)}
-        {grade.passed && <p className="lesson-hint">{lesson.definition.explanation}</p>}
+        {assessed && !submitted && <button disabled={state.actions.length === 0} onClick={() => setSubmitted(true)}>Завершить попытку</button>}
+        {assessed && !review && !grade.passed && <button onClick={() => { setReview(true); setHint(lesson.definition.hints.length); }}>Показать разбор</button>}
+        {((showRubric && grade.passed) || review) && <p className="lesson-hint">{lesson.definition.explanation}</p>}
       </aside>
     </div>
     {(error || view?.stale || view?.mode === 'stopped') && <p role="alert" className="lesson-warning">{error ||
@@ -142,7 +161,7 @@ export function LessonPanel({ lesson, onBack, onEditor }: Props) {
     <div className="lesson-actions">
       <button onClick={() => { setState(startLessonState(lesson)); setSessionKey((n) => n + 1); setError(''); setHint(0); setHighlight(null); }}>Начать попытку заново</button>
       <button onClick={() => { const seed = freeCopy(lesson, state.caseId, editorId('project')); if (seed) onEditor(seed); }}>Открыть свободную копию</button>
-      <button disabled={exporting || state.actions.length === 0} onClick={() => { void report(); }}>Сохранить отчёт наставнику</button>
+      <button disabled={exporting || state.actions.length === 0 || (assessed && !submitted)} onClick={() => { void report(); }}>Сохранить отчёт наставнику</button>
     </div>
   </main>;
 }
