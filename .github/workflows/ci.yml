@@ -24,6 +24,7 @@ jobs:
           node-version-file: .node-version
       - run: npm ci
       - run: npm run check
+      - run: npm run catalog:validate -- content/catalog/public-v1.json
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
 
