@@ -1,6 +1,7 @@
 import * as T from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createEquipment } from './createEquipment';
+import { createSceneQuality } from './quality';
 import { particleBudget, particleDistance, pipeFlow } from './flow';
 import { hasLiveFrame, sceneHeat } from './heatMap';
 import type { sceneInput } from './buildScene';
@@ -13,7 +14,9 @@ type PipeMesh = { id: string; path: T.CurvePath<T.Vector3>; length: number; diam
 const brass = new T.Color(0x9b754f), cold = new T.Color(0x458da8), hot = new T.Color(0xc8703f);
 export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, project: ProjectDocument, get: () => Options, onPick: (id: string) => void) {
   const renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'low-power' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  const quality = createSceneQuality();
+  const pixelRatio = () => Math.min(window.devicePixelRatio || 1, 1.5) * quality.level.pixelScale;
+  renderer.setPixelRatio(pixelRatio());
   const scene = new T.Scene();
   scene.background = new T.Color(0xf2eee1);
   scene.add(new T.HemisphereLight(0xfffbeb, 0x9b9f93, 2.1));
@@ -108,7 +111,9 @@ export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, proj
     if (dead) return;
     const { selected, transparent, heat, section: showSection, still, frame } = get();
     const live = hasLiveFrame(frame) ? frame : null;
-    const elapsed = !still && live?.mode === 'running' ? Math.min(.1, (time - previous) / 1000) : 0;
+    const frameMs = time - previous;
+    const elapsed = !still && live?.mode === 'running' ? Math.max(0, Math.min(.1, frameMs / 1000)) : 0;
+    if (quality.sample(frameMs)) renderer.setPixelRatio(pixelRatio());
     previous = time;
     if (live !== lastLive) {
       rooms = new Map(sceneHeat(project, live).map((room) => [room.roomId, room.surfaceC]));
@@ -132,7 +137,7 @@ export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, proj
       const state = pipeFlow(live?.snapshot.hydraulics?.channels[pipe.id]?.flowM3s, pipe.diameter);
       if (!state) continue;
       pipe.offset = particleDistance(pipe.offset, elapsed, state.speedMps, pipe.length);
-      for (let i = 0; i < pipe.dots; i++) {
+      for (let i = 0; i < pipe.dots; i += quality.level.particleStride) {
         const at = particleDistance(pipe.offset + pipe.length * i / pipe.dots, 0, 0, pipe.length);
         tmp.position.copy(pipe.path.getPoint(at / pipe.length)); tmp.updateMatrix();
         particles.setMatrixAt(drawn++, tmp.matrix);

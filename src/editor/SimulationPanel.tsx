@@ -143,6 +143,9 @@ export function SimulationPanel({ project, preset, artifacts, onArtifacts, onFoc
         })}>Запросить нагрев</button><button disabled={!available} onClick={() => command({
           kind: 'manual', actuatorId: current.scenario.sources[0]!.actuatorIds[0]!, demand: false,
         })}>Снять ручной запрос</button></>}
+        {frame && <button disabled={!available} onClick={() => command({ kind: 'power', powered: !frame.snapshot.powered })}>
+          {frame.snapshot.powered ? 'Отключить питание модели' : 'Восстановить питание модели'}
+        </button>}
         {limiter && <button disabled={!available} onClick={() => command({ kind: 'reset-limit', limiterId: limiter.id })}>Сбросить защиту</button>}
       </div>
       <p className="run-hint">Управляющая команда действует со следующего модельного тика.</p>
