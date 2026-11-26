@@ -1,4 +1,4 @@
-import { projectLimits } from './schema';
+import { projectLimits } from './limits';
 
 const maxDepth = 24;
 const maxNodes = 300_000;
