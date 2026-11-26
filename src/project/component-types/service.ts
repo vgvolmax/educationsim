@@ -45,7 +45,7 @@ export const service: EquipmentSpec[] = [
       readings: ['flow', 'temperature', 'power'], installation: 'Один теплоноситель, четыре подключения; перепутанная ветвь меняет смешение.' })),
   { id: 'training-heat-exchanger', family: 'storage', variant: 'plate-exchanger', titleRu: 'Пластинчатый теплообменник', shape: passive(),
     model: 'thermal:exchanger', settings: { uaWPerK: n('Теплопередача', 'Вт/К', 1, 100000, 500),
-      secondaryFluid: c('Учебная среда вторичной стороны', ['water', 'glycol'], 'water'),
+      secondaryFluid: c('Учебная среда вторичной стороны', ['water', 'propylene-glycol'], 'water'),
       secondaryGlycolMassFraction: n('Массовая доля гликоля', 'доля', 0, .5, 0) },
     readings: ['flow', 'temperature', 'power'], installation: 'Первичная и вторичная стороны не обмениваются жидкостью.' },
   { family: 'measurement-radiators', variant: 'radiator', titleRu: 'Радиатор', shape: passive(), model: 'thermal:radiator',

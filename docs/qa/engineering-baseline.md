@@ -1,0 +1,14 @@
+# C02: provisional numerical baseline for template review
+
+**Status: not reviewed by a technical specialist.** The packaged training templates use synthetic inputs. The results below are software regression checks, not physical acceptance, installation guidance, safety validation, a sizing rule, or permission to recommend a product. G02 records actual review and approval. No vendor SKU, manufacturer pump curve, water-quality threshold or actual building is modeled in these nominal runs.
+
+| Template | Reproducible check | Question for the specialist |
+|---|---|---|
+| Direct two-loop | Positive flow through parallel floor circuits and one source; primary 97.94 mL/s at tick 12. | Are branch geometry, control envelope and shown units appropriate for the first exercise? |
+| Radiators and floor | Hot/return split in the pump-mixing group and positive radiator-to-room heat at tick 12; primary 117.40 mL/s. | Which layout illustrates independent radiator and floor loops without implying universal connection or bypass rules? |
+| Single RTL loop | Return-water sensor and explicit hysteresis/actuator binding, primary 65.60 mL/s at tick 12. | Confirm return-port orientation, acceptable assumptions, and failure cases for L06. Do not infer real-product compatibility. |
+| Two floors, separator | Separately driven primary and secondary loops; upper floor fed through named risers. In V11/L10, primary flow changes about 0.73 mL/s with the separator, compared with 43.89 mL/s when the shared crossover is closed (direct series reference). Crossover moves from +64.02 to −27.43 mL/s in the two supplied speed cases. | Confirm comparison topology, variable pump speed limits, and interpretation of reversed flow for L10. Positive crossover is top to bottom. |
+| Heat pump and buffer | A declared heat-pump minimum-flow limit and one mixed buffer cell; initial 20 °C increases at tick 12, primary 104.17 mL/s. | Verify the exercise does not imply a sufficient minimum volume or defrost coverage. Which source symptoms and stop criteria are valid for L11? |
+| Water / propylene glycol | Separate domain profiles, thermal-only branch coupling and secondary cell near 23.55 °C at tick 12, initially 20 °C. | Confirm the reference property table, frozen profile approximation, separation assumptions and when the simplified model must stop. |
+
+Controls use fail-closed limits when a sample is absent, but no template output certifies real electrical protection. The nominal values do not verify pressure, leakage, safe discharge routing or site acceptance. Use V01–V12 with their documented tolerances and qualified review before finalizing affected lesson content. The load fixture has 3 levels, 12 rooms, 6 manifolds, 48 loops, 220 components and 400 connections; independent parallel resistance banks are intentional solver stress, not a residential piping diagram. Real Windows timing and render tests are in G03.

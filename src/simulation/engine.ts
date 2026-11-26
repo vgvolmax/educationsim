@@ -113,7 +113,9 @@ export function openSimulation(input: SimulationScenario): Result<SimulationEngi
     const tick = state.tick + 1, diagnostics: Diagnostic[] = [];
     const faults = advanceFaults(state.faults, { channels: [...channels.keys()], sensors: samples, actuators: [...actuatorIds] }, faultCommands);
     if (!faults.ok) return faults;
-    const previousBuilding = state.building ?? scenario.building;
+    const previousBuilding = state.building ?? (scenario.building && {
+      roomsC: scenario.building.roomsC, floors: scenario.building.floorTemperatures,
+    });
     const sampleValues: ControlInput['samples'] = Object.fromEntries(scenario.control.bindings.map((binding) => [
       binding.sampleId, { tick: state.tick, celsius: (binding.kind === 'fluid' ? state.fluid.cells[binding.id]?.temperatureC :
         binding.kind === 'room' ? previousBuilding?.roomsC[binding.id] : previousBuilding?.floors[binding.id]?.surfaceC) ?? null },

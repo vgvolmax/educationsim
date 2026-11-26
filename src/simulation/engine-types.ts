@@ -20,7 +20,9 @@ export type SimulationScenario = {
     devices: readonly ControlDevice[]; wires: readonly ControlWire[]; bindings: readonly SensorBinding[];
     zoneChannels?: Readonly<Record<string, readonly string[]>>;
   };
-  building?: Omit<BuildingInput, 'seconds' | 'fluidProfiles' | 'state'> & Pick<BuildingInput['state'], 'roomsC' | 'floors'>;
+  building?: Omit<BuildingInput, 'seconds' | 'fluidProfiles' | 'state'> & Pick<BuildingInput['state'], 'roomsC'> & {
+    floorTemperatures: BuildingInput['state']['floors'];
+  };
   sources: readonly EngineSource[];
   pressure?: readonly EnginePressureProfile[];
   serviceCapacityM3ByCell?: Readonly<Record<string, number>>;
