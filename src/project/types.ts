@@ -1,3 +1,4 @@
+import type { InspectorEdit } from './inspector-edits';
 import type { RoomEdit } from './editor-geometry';
 import type { z } from 'zod';
 import type { projectSchema } from './schema';
@@ -42,6 +43,7 @@ export type ComponentType = {
 type NamedCommand = { commandId: string };
 export type ProjectEdit = NamedCommand & (
   | RoomEdit
+  | InspectorEdit
   | { kind: 'rename_project'; title: string }
   | { kind: 'add_component'; component: ComponentInstance }
   | { kind: 'remove_component'; componentId: string }

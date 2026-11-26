@@ -58,3 +58,18 @@
   .drawing { order: -1; align-self: stretch; }
   .drawing svg { min-height: 14rem; }
 }
+.editor-section { border: 1px solid var(--edge); border-radius: .25rem; padding: .45rem .55rem; margin: .4rem 0; background: #f7f4eb; }
+.editor-section summary { cursor: pointer; color: var(--teal); font-weight: 700; }
+.editor-section[open] summary { margin-bottom: .5rem; }
+.editor-section button { margin-top: .25rem; }
+.editor-section p { margin: .25rem 0; }
+.editor-section label small, .port-entry small { color: #56544b; font-size: .75rem; }
+.room-fields label.toggle-field { display: flex; gap: .35rem; align-items: baseline; }
+.port-entry { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .45rem; padding: .16rem 0; }
+.replacement { display: grid; gap: .25rem; }
+.replacement select, .room-fields textarea { max-width: 100%; box-sizing: border-box; }
+.room-fields textarea { font: inherit; color: var(--ink); }
+.replacement-summary, .route-proposal { border-left: 3px solid var(--teal); padding: .35rem; }
+.route-warnings { color: #7b3e2c; padding-left: 1rem; }
+.route-preview { fill: none; stroke: #a35135; stroke-width: .047; stroke-dasharray: .08 .04; }
+.route-mark { fill: #fff; stroke: #a35135; stroke-width: .05; }

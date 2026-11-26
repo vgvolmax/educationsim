@@ -79,6 +79,13 @@ test('launches the packaged app offline, retains storage and rejects a second in
     await expect(page.locator('[data-link="supply"]')).toHaveCount(0);
     await page.getByRole('button', { name: 'Отменить', exact: true }).click();
     await expect(page.locator('[data-link="supply"]')).toHaveCount(1);
+    await page.getByText('Трассировка петли', { exact: true }).click();
+    await page.getByLabel('Связь петли').selectOption('pipe-a');
+    await page.getByLabel('Точки X Z, м').fill('0,2 0,2\n5 0,2\n5 0,35\n0,2 0,35');
+    await page.getByRole('button', { name: 'Предпросмотр трассы' }).click();
+    await expect(page.locator('[data-route-preview]')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Принять трассу' })).toBeDisabled();
+
 
     expect(app.windows()).toHaveLength(1);
     expect(page.url()).toBe('app://educationsim/');

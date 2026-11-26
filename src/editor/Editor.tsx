@@ -4,6 +4,10 @@ import { rectangleOf } from '../project/editor-geometry';
 import { equipmentRegistry, trainingRegistry } from '../project/registry';
 import type { PortEndpoint, ProjectDocument, Room } from '../project/types';
 import { parseRussianDecimal } from '../project/units';
+import { Inspector, StartConditions } from './Inspector';
+import { PortInspector } from './PortInspector';
+import { RouteTools } from './RouteTools';
+import type { RouteOverlay } from './RouteTools';
 import { Schematic } from '../views/schematic/Schematic';
 import { editorId } from './useProject';
 import type { ProjectController } from './useProject';
@@ -29,11 +33,11 @@ export function Editor({ ctl, project, onHome }: { ctl: ProjectController; proje
   const [level, setLevel] = useState(project.viewPreferences.level);
   const [selected, setSelected] = useState<string | null>(null);
   const [pending, setPending] = useState<PortEndpoint | null>(null);
+  const [overlay, setOverlay] = useState<RouteOverlay & { revision?: number }>({});
   const [typeId, setTypeId] = useState('training-heat-source');
   const [water, setWater] = useState(true), [control, setControl] = useState(true);
   const room = project.rooms.find((r) => r.id === selected);
   const component = project.components.find((c) => c.id === selected);
-  const ports = component ? trainingRegistry.get(component.typeId)?.ports ?? [] : [];
   const components = project.components.filter((c) => c.level === level);
   const rooms = project.rooms.filter((r) => r.level === level);
   const links = [...project.hydronicLinks.map((link) => ({ link, domain: 'hydronic' as const })),
@@ -97,7 +101,7 @@ export function Editor({ ctl, project, onHome }: { ctl: ProjectController; proje
       <span className="revision">Редакция {project.revision}</span>
     </header>
     <div className="work-toolbar" aria-label="Инструменты схемы">
-      <label>Этаж <select value={level} onChange={(e) => { setLevel(Number(e.target.value)); setSelected(null); }}>
+      <label>Этаж <select value={level} onChange={(e) => { setLevel(Number(e.target.value)); setSelected(null); setOverlay({}); }}>
         {[0, 1, 2].map((n) => <option key={n} value={n}>{n + 1}</option>)}
       </select></label>
       <button onClick={addRoom} disabled={project.rooms.length >= 12}>Добавить комнату</button>
@@ -118,13 +122,11 @@ export function Editor({ ctl, project, onHome }: { ctl: ProjectController; proje
           <span className="item-number">{i + 1}</span>{equipmentRegistry.get(c.typeId)?.titleRu ?? c.typeId}
         </button>)}
       </aside>
-      <Schematic project={project} level={level} selected={selected} onSelect={setSelected} water={water} control={control} />
+      <Schematic project={project} level={level} selected={selected} onSelect={setSelected} water={water} control={control} overlay={overlay.revision === project.revision ? overlay : undefined} />
       <section className="work-panel" aria-label="Монтаж и свойства">
-        {room && <><h2>{room.name}</h2><RoomForm room={room} ctl={ctl} /></>}
-        {component && <><h2>Порты</h2>{!ports.length && <p>У компонента нет подключаемых портов.</p>}
-          {ports.map((p) => <button key={p.id} aria-pressed={pending?.componentId === component.id && pending.portId === p.id}
-            onClick={() => pickPort(p.id)}>Порт {p.id} · {p.domain === 'hydronic' ? 'вода' : p.direction === 'input' ? 'вход' : 'выход'}</button>)}
-        </>}
+        {room && <><h2>{room.name}</h2><RoomForm room={room} ctl={ctl} /><StartConditions room={room} project={project} ctl={ctl} /></>}
+        {component && <><PortInspector project={project} component={component} pending={pending} onPick={pickPort} />
+          <Inspector key={component.id + ':' + component.typeId} component={component} project={project} ctl={ctl} /></>}
         {pending && <div className="pick-port"><p>Начало: {pending.portId}. Выберите второй порт.</p><button onClick={() => setPending(null)}>Отменить соединение</button></div>}
         <h2>Монтаж</h2>
         <form onSubmit={addComponent} className="room-fields">
@@ -135,6 +137,7 @@ export function Editor({ ctl, project, onHome }: { ctl: ProjectController; proje
           <label>Z, м<input name="z" inputMode="decimal" defaultValue="1" /></label>
           <button type="submit" disabled={project.components.length >= 220}>Установить</button>
         </form>
+        <RouteTools key={level} level={level} project={project} ctl={ctl} onOverlay={(next) => setOverlay({ ...next, revision: project.revision })} />
         <h2>Связи этажа</h2>
         {!links.length && <p>Нет связей</p>}
         {links.map(({ domain, link }) => <div key={domain + link.id} className="link-row">
