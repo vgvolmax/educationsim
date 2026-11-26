@@ -138,11 +138,13 @@
 
 **После:** B02–B03. **Файлы:** `src/simulation/heat-transfer.ts`, `src/simulation/mixing.ts`, `src/simulation/storage-tank.ts`, `tests/simulation/heat-transfer.test.ts`.
 
-- [ ] Зафиксировать `mixture_is_35c_in_v03`, `loop_emits_348w_in_v04`, `zero_flow_stops_advective_heat_but_allows_residual_heat`, `exchanger_conserves_heat_with_isolated_fluids`, `buffer_accumulates_and_loses_heat`, `global_energy_ledger_matches_v09`. Проверить, что внутренний перенос взаимно компенсируется, источнику, наружным потерям, подпитке и сбросу соответствуют отдельные члены баланса.
-- [ ] Реализовать `advanceFluidTemperatures(input: FluidThermalInput): Result<FluidThermalState>`, смешение по энтальпии, потерю наружу, модель радиатора, буфер, гидрострелку, тепловую связь двух сторон теплообменника.
-- [ ] Запустить `npm run test -- tests/simulation/heat-transfer.test.ts`. Зафиксировать `feat: simulate heat and mixing`.
+- [x] Зафиксировать `mixture_is_35c_in_v03`, `loop_emits_348w_in_v04`, `zero_flow_stops_advective_heat_but_allows_residual_heat`, `exchanger_conserves_heat_with_isolated_fluids`, `buffer_accumulates_and_loses_heat`, `global_energy_ledger_matches_v09`. Проверить, что внутренний перенос взаимно компенсируется, источнику, наружным потерям, подпитке и сбросу соответствуют отдельные члены баланса.
+- [x] Реализовать `advanceFluidTemperatures(input: FluidThermalInput): Result<FluidThermalState>`, смешение по энтальпии, потерю наружу, модель радиатора, буфер, гидрострелку, тепловую связь двух сторон теплообменника.
+- [x] Запустить `npm run test -- tests/simulation/heat-transfer.test.ts`. Зафиксировать `feat: simulate heat and mixing`.
 
 [Контракт переноса тепла](../specs/2026-11-26-thermal-transport-contract.md).
+
+Подтверждение B04: [PR #12](https://github.com/vgvolmax/educationsim/pull/12), [проверки браузера и Windows](https://github.com/vgvolmax/educationsim/actions/runs/45868207662).
 
 ### B05. Рассчитать пол, комнату и климат
 
@@ -151,6 +153,8 @@
 - [ ] Добавить `unheated_room_matches_exponential_v05`, `dry_and_wet_floor_have_different_inertia`, `higher_outdoor_loss_changes_room_temperature`, `surface_limit_is_distinct_from_water_temperature`.
 - [ ] Моделировать секции пола с массой и теплопотерями вверх/вниз. Для комнаты учитывать UA ограждений, вентиляцию и теплопередачу от пола и радиатора. На выходе выдавать температуры воды, массы, поверхности и воздуха по отдельности.
 - [ ] Запустить `npm run test -- tests/simulation/room.test.ts`. Зафиксировать `feat: add room and floor thermal response`.
+
+[Контракт температуры пола и комнаты](../specs/2026-11-26-building-thermal-contract.md).
 
 ### B06. Реализовать датчики, автоматику, термостаты и источники
 
