@@ -5,6 +5,8 @@ import { flowTolerance, makePump, pumpAtRest, pumpFlow, pumpOperatingPoint } fro
 import type { PumpInput, PumpLaw, PumpOperatingPoint } from './pump';
 import { flowScale, makeResistance, passiveFlow, pipeResistance, pressureScale } from './resistance';
 import type { ResistanceLaw, ResistanceProfile } from './resistance';
+import { parseValve, scaleResistance, validMixingTopology, valveLaw } from './valves';
+import type { MixingValveInput, ValveInput, ValveLaw, ValveProfile, ValveStatus } from './valves';
 import type { ChannelOrigin, CompiledSystem, HydraulicChannel, HydraulicDomain, HydraulicNode } from './types';
 
 export type HydraulicInputs = {
@@ -12,6 +14,8 @@ export type HydraulicInputs = {
   pumps?: Readonly<Record<string, PumpInput>>;
   fixedDarcyFactors?: Readonly<Record<string, number>>;
   closedChannels?: readonly string[];
+  valves?: Readonly<Record<string, ValveInput>>;
+  mixingValves?: readonly MixingValveInput[];
   maxIterations?: number;
 };
 type ChannelState = {
@@ -22,6 +26,7 @@ type ChannelState = {
   resistance?: ResistanceProfile;
   origin: ChannelOrigin;
   pump?: PumpOperatingPoint;
+  valve?: ValveStatus;
 };
 export type HydraulicSnapshot = {
   projectRevision: number;
@@ -31,7 +36,7 @@ export type HydraulicSnapshot = {
 };
 type EdgeLaw = {
   channel: HydraulicChannel; resistance: ResistanceLaw;
-  pump?: PumpLaw; off?: { blockReverse?: boolean };
+  pump?: PumpLaw; off?: { blockReverse?: boolean }; valve?: ValveLaw;
 };
 const gravity = 9.80665;
 const zeroResistance: ResistanceLaw = { linear: 0, quadratic: 0, profile: {} };
@@ -39,7 +44,9 @@ const issue = (code: string, path: string, message: string, severity: Diagnostic
   ({ code, path, message, severity });
 const failure = (error: Diagnostic): Result<HydraulicSnapshot> => ({ ok: false, diagnostics: [error] });
 
-function channelLaw(channel: HydraulicChannel, domain: HydraulicDomain, inputs: HydraulicInputs): EdgeLaw | Diagnostic {
+function channelLaw(channel: HydraulicChannel, domain: HydraulicDomain, inputs: HydraulicInputs,
+  valve?: Exclude<ValveProfile, { mode: 'closed' }>,
+): EdgeLaw | Diagnostic {
   const powered = channel.kind === 'pump' || channel.kind === 'source';
   const input = powered
     ? channel.enabled ? inputs.pumps?.[channel.id] : { mode: 'off' as const, blockReverse: inputs.pumps?.[channel.id]?.blockReverse }
@@ -49,14 +56,18 @@ function channelLaw(channel: HydraulicChannel, domain: HydraulicDomain, inputs: 
   const supplied = inputs.resistance[channel.id];
   const specified = supplied ?? (channel.kind === 'pipe' && factor !== undefined ? pipeResistance(channel, domain.fluid, factor) : null);
   const drive = input && input.mode !== 'off';
-  const resistance = specified ? makeResistance(specified) : drive ? zeroResistance : null;
+  let resistance = specified ? makeResistance(specified) : drive || valve?.mode === 'regulator' ? zeroResistance : null;
+  if (resistance && valve?.mode === 'factor') resistance = scaleResistance(resistance, valve.factor);
   if (!resistance) return issue('invalid_resistance', channel.id, 'Нужно положительное сопротивление или явно заданный профиль трубы.');
-  if (!input || input.mode === 'off') return { channel, resistance, ...(input && { off: input }) };
+  if (!input || input.mode === 'off') {
+    return { channel, resistance, ...(input && { off: input }), ...(valve && { valve: valveLaw(valve, resistance) }) };
+  }
   const pump = makePump(input, resistance);
   return pump ? { channel, resistance, pump } : issue('invalid_pump_curve', channel.id, 'Характеристика насоса должна быть конечной и убывающей.');
 }
 
 function evaluateLaw(edge: EdgeLaw, delta: number): { q: number; dq: number } {
+  if (edge.valve) return edge.valve.evaluate(delta);
   if (edge.pump) return pumpFlow(edge.pump, delta);
   if (edge.off?.blockReverse && delta < 0) return { q: 0, dq: 1e-8 };
   return passiveFlow(edge.resistance, delta);
@@ -97,13 +108,36 @@ export function solveHydraulics(system: CompiledSystem, inputs: HydraulicInputs)
   const maxIterations = inputs.maxIterations ?? 65;
   if (!Number.isInteger(maxIterations) || maxIterations < 0 || maxIterations > 100 ||
       [...closed].some((id) => !channelMap.has(id))) return failure(issue('invalid_hydraulic_inputs', '', 'Некорректные параметры расчёта.'));
+  const configuredValves = new Map(Object.entries(inputs.valves ?? {}));
+  for (const mixing of inputs.mixingValves ?? []) {
+    const first = channelMap.get(mixing.first), second = channelMap.get(mixing.second);
+    if (!first || !second || !validMixingTopology(first, second) ||
+        configuredValves.has(first.id) || configuredValves.has(second.id) ||
+        !Number.isFinite(mixing.position) || mixing.position < 0 || mixing.position > 1) {
+      return failure(issue('invalid_mixing_topology', mixing.first, 'Трёхходовой клапан должен назначать две разные ветви общего узла.'));
+    }
+    configuredValves.set(first.id, { kind: 'three-way', opening: mixing.position });
+    configuredValves.set(second.id, { kind: 'three-way', opening: 1 - mixing.position });
+  }
+  const valves = new Map<string, ValveProfile>();
+  for (const [id, valve] of configuredValves) {
+    const channel = channelMap.get(id);
+    if (!channel || channel.kind === 'pump' || channel.kind === 'source') {
+      return failure(issue('invalid_valve_channel', id, 'Клапан должен быть добавлен в отдельную гидравлическую ветвь.'));
+    }
+    const profile = parseValve(valve);
+    if (!profile) return failure(issue('invalid_valve_profile', id, 'Профиль клапана некорректен.'));
+    valves.set(id, profile);
+  }
   const snapshot: HydraulicSnapshot = {
     projectRevision: system.projectRevision, pressurePa: Object.create(null) as HydraulicSnapshot['pressurePa'],
     flowResidualM3s: Object.create(null) as HydraulicSnapshot['flowResidualM3s'],
     channels: Object.create(null) as HydraulicSnapshot['channels'],
   };
   const zero = (channel: HydraulicChannel, state: 'closed' | 'inactive'): void => {
-    snapshot.channels[channel.id] = { flowM3s: 0, direction: 'none', state, origin: channel.origin, potentialDropPa: null };
+    const valve = valves.get(channel.id);
+    snapshot.channels[channel.id] = { flowM3s: 0, direction: 'none', state, origin: channel.origin, potentialDropPa: null,
+      ...(valve && { valve: { kind: valve.kind, status: 'closed' } }) };
   };
   for (const domain of system.hydraulicDomains) {
     const reference = nodeMap.get(domain.referenceNodeId);
@@ -119,8 +153,9 @@ export function solveHydraulics(system: CompiledSystem, inputs: HydraulicInputs)
         return failure(issue('invalid_hydraulic_domain', id, 'Канал не соединяет узлы своего контура.'));
       }
       if (domain.flowConstraint === 'zero') { zero(channel, 'inactive'); continue; }
-      if (closed.has(id)) { zero(channel, 'closed'); continue; }
-      const law = channelLaw(channel, domain, inputs);
+      const valve = valves.get(id);
+      if (closed.has(id) || valve?.mode === 'closed') { zero(channel, 'closed'); continue; }
+      const law = channelLaw(channel, domain, inputs, valve);
       if ('severity' in law) return failure(law);
       edges.push(law);
     }
@@ -135,7 +170,6 @@ export function solveHydraulics(system: CompiledSystem, inputs: HydraulicInputs)
     }
 
     for (const island of activeIslands(domain.nodeIds, reference.id, edges)) {
-      if (!island.anchored) diagnostics.push(issue('unreferenced_island', island.ids[0]!, 'Нет опоры для абсолютного уровня давления изолированной группы.', 'warning'));
       const index = new Map(island.ids.map((id, i) => [id, i]));
       const normalized: FlowEdge[] = island.edges.map((edge) => ({
         from: index.get(edge.channel.from)!, to: index.get(edge.channel.to)!,
@@ -144,20 +178,37 @@ export function solveHydraulics(system: CompiledSystem, inputs: HydraulicInputs)
       }));
       const solved = solveHeads(island.ids.length, normalized, maxIterations);
       if (!solved) return failure(issue('hydraulics_nonconvergent', domain.id, 'Расчёт расхода не сошёлся в пределах числа итераций.'));
+      const states = island.edges.map((edge, i) => {
+        const { from, to } = normalized[i]!;
+        const potential = solved.heads[from]! - solved.heads[to]!;
+        const q = solved.evaluation.samples[i]!.q;
+        let valve = edge.valve?.status(potential);
+        if (valve && ['check', 'bypass', 'regulator'].includes(valve.kind) && Math.abs(q) <= flowTolerance) {
+          valve = { kind: valve.kind, status: 'blocked' };
+        }
+        const operating = edge.pump ? pumpOperatingPoint(edge.pump, potential, q) :
+          edge.off ? { headPa: 0, status: edge.off.blockReverse && potential < 0 ? 'check-closed' : 'off' } as PumpOperatingPoint : undefined;
+        return { edge, potential, q, valve, operating };
+      });
+      const conductive = states.filter(({ valve, operating }) =>
+        valve?.status !== 'blocked' && (typeof operating !== 'object' || operating.status !== 'check-closed')).map(({ edge }) => edge);
+      const partitions = activeIslands(island.ids, island.ids[0]!, conductive);
+      const partitionByNode = new Map<string, Island>();
+      for (const part of partitions) {
+        for (const id of part.ids) partitionByNode.set(id, part);
+        if (!island.anchored || !part.anchored) diagnostics.push(issue('unreferenced_island', part.ids[0]!,
+          'Нет опоры для абсолютного уровня давления изолированной группы.', 'warning'));
+      }
       for (const [i, id] of island.ids.entries()) {
         const node = nodeMap.get(id);
         if (!node) return failure(issue('invalid_hydraulic_domain', id, 'Отсутствует гидравлический узел.'));
-        const pressure = island.anchored ? staticPressure(node, reference, domain, solved.heads[i]!) : null;
+        const pressure = island.anchored && partitionByNode.get(id)?.anchored ? staticPressure(node, reference, domain, solved.heads[i]!) : null;
         if (pressure !== null && !Number.isFinite(pressure)) return failure(issue('invalid_pressure', id, 'Давление вышло за численный диапазон.'));
         snapshot.pressurePa[id] = pressure;
         snapshot.flowResidualM3s[id] = solved.evaluation.residual[i]! / flowScale;
       }
-      for (const [i, edge] of island.edges.entries()) {
-        const { from, to } = normalized[i]!;
-        const potential = solved.heads[from]! - solved.heads[to]!;
-        const q = solved.evaluation.samples[i]!.q;
-        const operating = edge.pump ? pumpOperatingPoint(edge.pump, potential, q) :
-          edge.off ? { headPa: 0, status: edge.off.blockReverse && potential < 0 ? 'check-closed' : 'off' } as PumpOperatingPoint : undefined;
+      for (const { edge, potential, q, valve, operating } of states) {
+        const samePressureGroup = partitionByNode.get(edge.channel.from) === partitionByNode.get(edge.channel.to);
         if (operating === 'curve_limit') return failure(issue('pump_curve_limit', edge.channel.id, 'Рабочая точка вышла за предел характеристики насоса.'));
         if (operating === 'unsupported_reverse') return failure(issue('pump_reverse_unmodeled', edge.channel.id, 'Обратный расход включённого насоса не описан его характеристикой.'));
         if (!Number.isFinite(q) || !Number.isFinite(potential * pressureScale) || (operating && !Number.isFinite(operating.headPa))) {
@@ -166,8 +217,9 @@ export function solveHydraulics(system: CompiledSystem, inputs: HydraulicInputs)
         snapshot.channels[edge.channel.id] = {
           flowM3s: Math.abs(q) <= flowTolerance ? 0 : q / flowScale,
           direction: Math.abs(q) <= flowTolerance ? 'none' : q > 0 ? 'forward' : 'reverse',
-          state: 'open', potentialDropPa: potential * pressureScale, resistance: edge.resistance.profile,
+          state: 'open', potentialDropPa: samePressureGroup ? potential * pressureScale : null, resistance: edge.resistance.profile,
           origin: edge.channel.origin, ...(operating && { pump: operating }),
+          ...(valve && { valve }),
         };
       }
     }

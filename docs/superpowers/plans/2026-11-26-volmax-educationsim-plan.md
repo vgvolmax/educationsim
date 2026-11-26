@@ -114,11 +114,13 @@
 
 **После:** B01. **Файлы:** `src/simulation/hydraulics.ts`, `src/simulation/pump.ts`, `src/simulation/resistance.ts`, `tests/simulation/hydraulics.test.ts`.
 
-- [ ] Добавить `parallel_equal_and_unequal_match_v01_v02`, `pump_intersection_matches_closed_form`, `node_balance_matches_v09`, `disconnected_loop_has_no_forced_flow`, `v10_pump_saturates_at_2_lpm_and_20_kpa`, `v10_closed_network_keeps_shutoff_head`, `v10_off_pump_allows_only_compatible_passive_flow`.
-- [ ] Реализовать `solveHydraulics(system: CompiledSystem, inputs: HydraulicInputs): Result<HydraulicSnapshot>`. Использовать баланс потоков и уравнения потерь, сохранять профиль сопротивления, рабочую точку и направление потока. Использовать p + ρgz для учёта высоты в контуре. Учитывать насыщение при постоянном перепаде, пассивное сопротивление остановленного насоса и закрытие внутреннего обратного клапана. Ограничить итерации и области использования кривых.
-- [ ] Запустить `npm run test -- tests/simulation/hydraulics.test.ts`. Зафиксировать `feat: solve hydronic network and pump operating point`.
+- [x] Добавить `parallel_equal_and_unequal_match_v01_v02`, `pump_intersection_matches_closed_form`, `node_balance_matches_v09`, `disconnected_loop_has_no_forced_flow`, `v10_pump_saturates_at_2_lpm_and_20_kpa`, `v10_closed_network_keeps_shutoff_head`, `v10_off_pump_allows_only_compatible_passive_flow`.
+- [x] Реализовать `solveHydraulics(system: CompiledSystem, inputs: HydraulicInputs): Result<HydraulicSnapshot>`. Использовать баланс потоков и уравнения потерь, сохранять профиль сопротивления, рабочую точку и направление потока. Использовать p + ρgz для учёта высоты в контуре. Учитывать насыщение при постоянном перепаде, пассивное сопротивление остановленного насоса и закрытие внутреннего обратного клапана. Ограничить итерации и области использования кривых.
+- [x] Запустить `npm run test -- tests/simulation/hydraulics.test.ts`. Зафиксировать `feat: solve hydronic network and pump operating point`.
 
 [Контракт решателя давления и расхода](../specs/2026-11-26-hydraulic-solver-contract.md).
+
+Подтверждение B02: [PR #10](https://github.com/vgvolmax/educationsim/pull/10), [проверки браузера и Windows](https://github.com/vgvolmax/educationsim/actions/runs/45860183586).
 
 ### B03. Добавить направленные клапаны, балансировку и байпас
 
@@ -127,6 +129,8 @@
 - [ ] Создать `check_valve_blocks_reverse_flow`, `bypass_only_opens_above_threshold`, `zero_flow_when_closed`, `dynamic_regulator_respects_working_range`, `nonconverging_network_returns_diagnostic`.
 - [ ] Подключить модели клапанов: запорный, балансировочный, зональный, обратный, перепускной, двух-/трёхходовой и ограничитель расхода. У сетки фильтра задавать рост сопротивления. Перепуск учитывать как новый активный путь в той же сети.
 - [ ] Запустить `npm run test -- tests/simulation/hydraulics.test.ts tests/simulation/valves.test.ts`. Зафиксировать `feat: model regulation and flow protection`.
+
+[Контракт клапанов и регулирования](../specs/2026-11-26-valve-contract.md).
 
 ### B04. Рассчитать перенос тепла и смешение
 
