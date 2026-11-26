@@ -55,12 +55,14 @@
 
 ### A01. Настроить рабочую сборку и обязательные проверки
 
-**Файлы:** `package.json`, `package-lock.json`, `tsconfig.json`, `vite.config.ts`, `forge.config.ts`, `eslint.config.js`, `index.html`, `src/app/main.tsx`, `src/desktop/main.ts`, `tests/smoke/basic.spec.ts`, `tests/desktop/startup.spec.ts`, `.github/workflows/ci.yml`, `README.md`.
+**Файлы:** `package.json`, `package-lock.json`, `tsconfig.json`, `vite.config.mts`, `forge.config.ts`, `eslint.config.mjs`, `index.html`, `src/app/main.tsx`, `src/desktop/main.ts`, `tests/smoke/basic.spec.ts`, `tests/desktop/startup.spec.ts`, `.github/workflows/ci.yml`, `README.md`.
 
-- [ ] Зафиксировать версии библиотек, поддерживаемую LTS Node и команды `dev`, `lint`, `typecheck`, `test`, `test:e2e`, `build`, `check`, `package:win` и `test:desktop`.
-- [ ] Создать e2e `opens_education_sim_shell`, который ожидает заголовок «Волмакс · Тёплый пол» и русскую кнопку «Новый проект». На временной пустой странице тест должен падать по заголовку.
-- [ ] Подключить React и русскую локаль, стабильное имя приложения и origin `app://educationsim/`, изоляцию окна и локальное логирование версии. Настроить один экземпляр на рабочий профиль и отдельные профили для разработки и тестов. Настроить Vite для упаковки ресурсов и Worker. Electron Forge упаковывает ZIP под Windows x64. В CI использовать минимальные разрешения и фиксированные ревизии Actions.
-- [ ] Запустить `npm ci`, `npm run check` и `npm run test:e2e -- tests/smoke/basic.spec.ts`. На Windows запустить `npm run package:win` и `npm run test:desktop`. Проверить запуск распакованного `EducationSim.exe` при отключённой сети из папки с пробелом и кириллицей. Проверить загрузку локального ресурса через Fetch, старт упакованного Worker и повторное чтение IndexedDB после перезапуска. Проверить отклонение путей за пределы ресурсов и открытие ссылки на товар вне окна приложения по явному действию. Запустить второй экземпляр из другой папки и проверить, что он не открывает профиль параллельно. Зафиксировать `chore: bootstrap EducationSim desktop`.
+- [x] Зафиксировать версии библиотек, поддерживаемую LTS Node и команды `dev`, `lint`, `typecheck`, `test`, `test:e2e`, `build`, `check`, `package:win` и `test:desktop`.
+- [x] Создать e2e `opens_education_sim_shell`, который ожидает заголовок «Волмакс · Тёплый пол» и русскую кнопку «Новый проект». На временной пустой странице тест должен падать по заголовку.
+- [x] Подключить React и русскую локаль, стабильное имя приложения и origin `app://educationsim/`, изоляцию окна и локальное логирование версии. Настроить один экземпляр на рабочий профиль и отдельные профили для разработки и тестов. Настроить Vite для упаковки ресурсов и Worker. Electron Forge упаковывает ZIP под Windows x64. В CI использовать минимальные разрешения и фиксированные ревизии Actions.
+- [x] Запустить `npm ci`, `npm run check` и `npm run test:e2e -- tests/smoke/basic.spec.ts`. На Windows запустить `npm run package:win` и `npm run test:desktop`. Проверить запуск распакованного `EducationSim.exe` при отключённой сети из папки с пробелом и кириллицей. Проверить загрузку локального ресурса через Fetch, старт упакованного Worker и повторное чтение IndexedDB после перезапуска. Проверить отклонение путей за пределы ресурсов и открытие ссылки на товар вне окна приложения по явному действию. Запустить второй экземпляр из другой папки и проверить, что он не открывает профиль параллельно. Зафиксировать `chore: bootstrap EducationSim desktop`.
+
+Подтверждение A01: [PR #5](https://github.com/vgvolmax/educationsim/pull/5), [проверка на Windows и браузерная проверка](https://github.com/vgvolmax/educationsim/actions/runs/45846021520). Целевая Windows 11 и штатный режим без сети остаются проверками этапа G.
 
 ### A02. Описать и валидировать версионированный проект
 
