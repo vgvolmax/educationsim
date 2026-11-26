@@ -9,3 +9,14 @@ button { font: inherit; font-weight: 700; padding: .65rem 1rem; background: #e8e
 footer { border-top: 1px solid #c5bcab; display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1.5rem; align-items: baseline; }
 a { color: #174f51; }
 a:focus-visible { outline: 2px solid #174f51; outline-offset: 4px; }
+button, select, input { font: inherit; }
+button:not(:disabled) { cursor: pointer; }
+button:disabled { opacity: .62; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid #174f51; outline-offset: 3px; }
+.actions { display: flex; flex-wrap: wrap; gap: .6rem; margin: 2rem 0; }
+.actions .primary { background: #174f51; border-color: #174f51; color: #fff; }
+.template-section { border-top: 1px solid #c5bcab; padding: 1rem 0 2rem; }
+.template-section h2 { margin: 0; line-height: 1.3; }
+.template-section p { margin: .4rem 0 1rem; }
+.template-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: .5rem; }
+.template-list button { background: #fbf9f4; color: #174f51; text-align: left; min-height: 3.2rem; }

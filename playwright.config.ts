@@ -10,7 +10,8 @@ export default defineConfig({
   projects: [
     {
       name: 'web',
-      testDir: './tests/smoke',
+      testDir: './tests',
+      testMatch: ['**/smoke/*.spec.ts', '**/e2e/*.spec.ts'],
       use: {
         baseURL: url,
         launchOptions: { executablePath: process.env.EDUCATIONSIM_CHROMIUM_PATH },

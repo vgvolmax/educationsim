@@ -73,6 +73,13 @@ test('launches the packaged app offline, retains storage and rejects a second in
     await page.getByRole('link', { name: 'Каталог ВОЛМАКС' }).click();
     await expect.poll(() => monitor.jsonValue()).toEqual([expect.stringMatching(/^https:\/\/volmax\.ru\/catalog\//)]);
     await monitor.dispose();
+    await page.getByRole('button', { name: 'Прямое подключение: две петли' }).click();
+    await expect(page.getByRole('img', { name: 'Схема этажа' }).locator('[data-link]')).toHaveCount(4);
+    await page.getByRole('button', { name: 'Удалить связь supply', exact: true }).click();
+    await expect(page.locator('[data-link="supply"]')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Отменить', exact: true }).click();
+    await expect(page.locator('[data-link="supply"]')).toHaveCount(1);
+
     expect(app.windows()).toHaveLength(1);
     expect(page.url()).toBe('app://educationsim/');
 
