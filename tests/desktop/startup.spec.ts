@@ -112,7 +112,20 @@ test('launches the packaged app offline, retains storage and rejects a second in
     const scene = page.locator('canvas[data-scene]');
     const fallback = page.getByText('3D недоступно. Схема и расчёт сохранены в 2D.');
     await expect(scene.or(fallback)).toBeVisible();
-    if (await scene.isVisible()) await page.getByRole('button', { name: '2D схема' }).click();
+    if (await scene.isVisible()) {
+      await page.getByLabel('Без движения').focus();
+      await page.keyboard.press('Tab');
+      await expect(scene).toBeFocused();
+      await expect(scene).toHaveAttribute('aria-keyshortcuts', /ArrowUp.*W A S D/);
+      const captured = await scene.evaluate((canvas) => {
+        const event = new KeyboardEvent('keydown', { code: 'KeyW', cancelable: true, bubbles: true });
+        canvas.dispatchEvent(event);
+        canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', bubbles: true }));
+        return event.defaultPrevented;
+      });
+      expect(captured).toBe(true);
+      await page.getByRole('button', { name: '2D схема' }).click();
+    }
     await expect(page.locator('[data-link="pipe-a"]')).toBeVisible();
     await expect(page.locator('[data-meter="link:pipe-a"]')).toHaveText('0,00 л/мин');
 

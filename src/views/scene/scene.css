@@ -12,3 +12,7 @@
 .cutaway-path.glycol { background: #f5eadc; border-color: #a35135; }
 .cutaway-path span { font: .84rem/1.4 monospace; }
 .cutaway-diagram { display: block; width: min(100%, 26rem); max-height: 17rem; margin-top: .45rem; }
+
+.scene-area .scene-help { margin: 0 0 .5rem; font-size: .82rem; color: #4d5148; }
+.scene-area canvas:focus-visible { outline: 2px solid #155752; outline-offset: 2px; }
+@media (forced-colors: active) { .scene-area canvas:focus-visible { outline-color: Highlight; } }

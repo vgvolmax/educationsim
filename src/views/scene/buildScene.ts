@@ -1,4 +1,5 @@
 import { equipmentRegistry } from '../../project/registry';
+import { sketchPairKey, untracedPath } from '../schematic/untraced-path';
 import type { Point3, ProjectDocument } from '../../project/types';
 
 export function sceneInput(doc: ProjectDocument, level: number) {
@@ -17,8 +18,27 @@ export function sceneInput(doc: ProjectDocument, level: number) {
     const route = routes.get(link.id);
     if (route ? !rooms.some((room) => room.id === route.roomId) : from.level !== level && to.level !== level) return [];
     const authored = route?.points ?? link.points;
-    const points: readonly Point3[] = authored.length >= 2 ? authored : [from.position, { x: to.position.x, y: from.position.y, z: from.position.z }, to.position];
-    return [{ id: 'link:' + link.id, points, diameterM: link.innerDiameterM, approximate: authored.length < 2 }];
+    return [{ id: 'link:' + link.id, from, to, authored, diameterM: link.innerDiameterM }];
   });
-  return { rooms, equipment, pipes, floorY: level * 3 };
+  const groups = new Map<string, number>();
+  const cursors = new Map<string, number>();
+  for (const { from, to, authored } of pipes) {
+    if (authored.length >= 2) continue;
+    const key = sketchPairKey(from, to);
+    groups.set(key, (groups.get(key) ?? 0) + 1);
+  }
+  const paths = pipes.map(({ id, from, to, authored, diameterM }) => {
+    const approximate = authored.length < 2;
+    let points: readonly Point3[] = authored;
+    if (approximate) {
+      const a = from.position, b = to.position;
+      const key = sketchPairKey(from, to), index = cursors.get(key) ?? 0;
+      cursors.set(key, index + 1);
+      const vertical = a.x === b.x && a.z === b.z && a.y !== b.y;
+      points = vertical ? [a, b] : untracedPath(from, to, index, groups.get(key) ?? 1)
+        .map(({ x, z }) => ({ x, y: a.y, z })).concat(a.y === b.y ? [] : [b]);
+    }
+    return { id, diameterM, points, approximate };
+  });
+  return { rooms, equipment, pipes: paths, floorY: level * 3 };
 }
