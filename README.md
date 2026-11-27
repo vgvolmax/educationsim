@@ -9,6 +9,12 @@
 - [Покрытие и применимость ассортимента](docs/superpowers/specs/2026-11-26-volmax-catalog-coverage.md)
 - [Реестр технической документации по артикулам](docs/superpowers/specs/2026-11-26-volmax-equipment-documentation.md)
 
+## Сборка в GitHub
+
+Откройте [EducationSim Windows preview release](https://github.com/vgvolmax/educationsim/actions/workflows/windows-preview-release.yml) и запустите **Run workflow** для ветки `main`. GitHub прогонит проверки, соберёт и проверит Windows ZIP, затем приложит архив и SHA-256 к черновику предварительного релиза. Архив также доступен в **Artifacts** соответствующего запуска.
+
+Скачайте `EducationSim-Windows-x64.zip`, распакуйте его целиком и запустите `EducationSim.exe`. Для версии 1.0 действует отдельная приёмка по плану проекта.
+
 ## Разработка
 
 Нужны Node.js из `.node-version` и npm. Установите зависимости через `npm ci`.
