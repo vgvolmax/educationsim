@@ -173,6 +173,7 @@ test('launches the packaged app offline, retains storage and rejects a second in
     await expect(page.getByText('Версия: packaged-catalog')).toBeVisible();
     await page.getByRole('button', { name: 'Старт' }).click();
     await page.getByRole('button', { name: /L01 · Подача, петля и обратка/ }).click();
+    await expect(page.locator('[data-link].water').first()).toHaveCSS('stroke', 'rgb(21, 87, 82)');
     await page.getByRole('button', { name: 'Рассчитать один тик', exact: true }).click();
     await expect(page.getByText('Модельный тик: 1')).toBeVisible();
     await page.getByRole('button', { name: 'Найти подачу' }).click();

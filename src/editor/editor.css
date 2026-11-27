@@ -1,4 +1,5 @@
-.editor { --ink: #183331; --teal: #155752; --copper: #a35135; --edge: #d3cbbc; --paper: #fbfaf5; color: var(--ink); }
+/* Shared bench tokens: the same 2D surface is mounted in the editor and lessons. */
+:where(.editor, .lesson-bench) { --ink: #183331; --teal: #155752; --copper: #a35135; --edge: #d3cbbc; --paper: #fbfaf5; color: var(--ink); }
 .editor h1, .editor h2, .editor p { margin: 0; }
 .work-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: 1rem;
   padding: 1rem clamp(.8rem, 3vw, 2rem) 1.2rem; background: var(--paper); border-bottom: 1px solid var(--edge); }
@@ -121,4 +122,12 @@
 @media (max-width: 510px) {
   .connection-guide { margin-inline: .6rem; }
   .work-tree { border-right: 0; border-top: 1px solid var(--edge); }
+}
+
+@media (forced-colors: active) {
+  .drawing .plan-link { stroke: CanvasText; }
+  .drawing .plan-equipment { fill: Highlight; }
+  .drawing text.equipment-index { fill: HighlightText; }
+  .drawing .room { stroke: CanvasText; }
+  .drawing .room.selected, .drawing .plan-link.lesson-identified { stroke: Highlight; }
 }
