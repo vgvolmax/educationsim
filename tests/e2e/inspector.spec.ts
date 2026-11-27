@@ -51,9 +51,9 @@ test('dead_end_protection_can_be_removed_with_explicit_cap', async ({ page }) =>
   await page.getByLabel('Учебное оборудование').selectOption('training-pressure-gauge');
   await page.getByRole('button', { name: 'Установить' }).click();
   await editSource(page);
-  await page.getByRole('button', { name: 'Порт supply · вода' }).click();
+  await page.getByRole('button', { name: 'Подача', exact: true }).click();
   await page.getByRole('button', { name: /^Манометр · mount-/ }).click();
-  await page.getByRole('button', { name: 'Порт in · вода' }).click();
+  await page.getByRole('button', { name: 'Вход', exact: true }).click();
   await page.getByRole('button', { name: 'Снять и поставить заглушку' }).click();
   await expect(page.getByRole('button', { name: /^Заглушка · mount-/ })).toBeVisible();
   await expect(page.locator('[data-link]')).toHaveCount(4);

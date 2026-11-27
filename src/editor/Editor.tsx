@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import type { Dispatch, FormEvent, KeyboardEvent, SetStateAction } from 'react';
+import type { Dispatch, FormEvent, KeyboardEvent, ReactNode, SetStateAction } from 'react';
 import { rectangleOf } from '../project/editor-geometry';
 import { equipmentRegistry, trainingRegistry } from '../project/registry';
 import type { PortEndpoint, ProjectDocument, Room } from '../project/types';
@@ -7,7 +7,8 @@ import { parseRussianDecimal } from '../project/units';
 import { Inspector, StartConditions } from './Inspector';
 import { SimulationPanel } from './SimulationPanel';
 import type { TemplateId } from '../project/templates';
-import { ConnectionGuide, equipmentLabel, mayCrossLevels, portLabel } from './ConnectionGuide';
+import { ConnectionGuide, equipmentLabel, mayCrossLevels } from './ConnectionGuide';
+import { portLabel } from './portLabel';
 import { PortInspector } from './PortInspector';
 import { RouteTools } from './RouteTools';
 import type { RouteOverlay } from './RouteTools';
@@ -37,8 +38,8 @@ function RoomForm({ room, ctl }: { room: Room; ctl: ProjectController }) {
   </form>;
 }
 
-export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome }: { ctl: ProjectController; project: ProjectDocument; preset?: TemplateId;
-  artifacts: ProjectArtifacts; onArtifacts: Dispatch<SetStateAction<ProjectArtifacts>>; onHome(): void }) {
+export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, files }: { ctl: ProjectController; project: ProjectDocument; preset?: TemplateId;
+  artifacts: ProjectArtifacts; onArtifacts: Dispatch<SetStateAction<ProjectArtifacts>>; onHome(): void; files?: ReactNode }) {
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [sceneFailed, setSceneFailed] = useState(false);
@@ -134,19 +135,21 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome }:
       <span className="revision">Редакция {project.revision}</span>
     </header>
     <div className="work-toolbar" aria-label="Инструменты схемы">
-      <label>Этаж <select value={level} onChange={(e) => { setLevel(Number(e.target.value)); setSelected(null); setOverlay({}); }}>
+      <div className="toolbar-group" role="group" aria-label="План этажа"><label>Этаж <select value={level} onChange={(e) => { setLevel(Number(e.target.value)); setSelected(null); setOverlay({}); }}>
         {[0, 1, 2].map((n) => <option key={n} value={n}>{n + 1}</option>)}
       </select></label>
-      <button onClick={addRoom} disabled={project.rooms.length >= 12}>Добавить комнату</button>
-      <button disabled={!ctl.history?.past.length} onClick={() => { cancelConnection(); ctl.changeHistory('undo'); }}>Отменить</button>
-      <button disabled={!ctl.history?.future.length} onClick={() => { cancelConnection(); ctl.changeHistory('redo'); }}>Повторить</button>
+      <button onClick={addRoom} disabled={project.rooms.length >= 12}>Добавить комнату</button></div>
+      <div className="toolbar-group" role="group" aria-label="История правок"><button disabled={!ctl.history?.past.length} onClick={() => { cancelConnection(); ctl.changeHistory('undo'); }}>Отменить</button>
+      <button disabled={!ctl.history?.future.length} onClick={() => { cancelConnection(); ctl.changeHistory('redo'); }}>Повторить</button></div>
+      <div className="toolbar-group view-group" role="group" aria-label="Вид проекта">
       <button aria-expanded={catalogOpen} onClick={() => setCatalogOpen((open) => !open)}>Каталог ВОЛМАКС</button>
       <button aria-pressed={viewMode === '2d'} onClick={() => setViewMode('2d')}>2D схема</button>
-      <button aria-pressed={viewMode === '3d'} onClick={() => { setSceneFailed(false); setViewMode('3d'); }}>3D сцена</button>
-      <label><input type="checkbox" checked={water} onChange={(e) => setWater(e.target.checked)} /> Вода</label>
-      <label><input type="checkbox" checked={control} onChange={(e) => setControl(e.target.checked)} /> Управление</label>
+      <button aria-pressed={viewMode === '3d'} onClick={() => { setSceneFailed(false); setViewMode('3d'); }}>3D сцена</button></div>
+      <div className="toolbar-group layer-group" role="group" aria-label="Слои 2D"><label><input type="checkbox" checked={water} onChange={(e) => setWater(e.target.checked)} /> Вода</label>
+      <label><input type="checkbox" checked={control} onChange={(e) => setControl(e.target.checked)} /> Управление</label></div>
     </div>
-    <details className="editor-section"><summary>Имя проекта</summary>
+    {files}
+    <details className="editor-section rename-project"><summary>Имя проекта</summary>
       <form className="project-title-form" onSubmit={(event) => {
         event.preventDefault();
         const title = String(new FormData(event.currentTarget).get('title')).trim();

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { HomeHero } from './HomeHero';
 import { Editor } from '../editor/Editor';
 import { editorId, useProject } from '../editor/useProject';
 import { createEmptyProject } from '../project/editor-geometry';
@@ -93,17 +94,15 @@ export function App() {
     onBack={() => setLesson(null)} onEditor={(seed) => {
       void save.flush().then((committed) => { if (committed) pick({ ...seed, ...emptyArtifacts() }, null); });
     }} /></>;
-  if (editing && ctl.history) return <>{tools}<Editor project={ctl.history.current} preset={preset} ctl={ctl}
-    artifacts={artifacts} onArtifacts={setArtifacts} onHome={() => setEditing(false)} /></>;
+  if (editing && ctl.history) return <Editor files={tools} project={ctl.history.current} preset={preset} ctl={ctl}
+    artifacts={artifacts} onArtifacts={setArtifacts} onHome={() => setEditing(false)} />;
   return (
     <main className="shell">
-      <p className="eyebrow">Учебная лаборатория · Волмакс</p>
-      <h1>Волмакс · Тёплый пол</h1>
-      <p className="intro">Конструктор водяного напольного отопления.</p>
-      <div className="actions">
+      <div className="home-brand"><span className="brand-mark" aria-hidden="true">↳</span><strong>EducationSim</strong><span>Тренажёр для менеджеров</span></div>
+      <HomeHero actions={<>
         <button className="primary" onClick={() => { void launch(); }}>Новый проект</button>
         {ctl.history && <button onClick={() => setEditing(true)}>Вернуться к текущему проекту</button>}
-      </div>
+      </>} />
       {tools}
       {save.error && <p role="alert">{save.error}</p>}
       {save.recent.length > 0 && <section className="recent-projects" aria-label="Локальные проекты">
@@ -114,10 +113,12 @@ export function App() {
       </section>}
       {ctl.error && <p role="alert">{ctl.error}</p>}
       <section aria-label="Стартовые схемы" className="template-section">
-        <h2>Стартовые схемы</h2><p>Откройте учебную схему как отдельный проект.</p>
-        <div className="template-list">{templateIds.map((id) => {
+        <div className="home-section-heading"><div><p className="eyebrow">Конструктор</p><h2>Стартовые схемы</h2></div>
+          <p>Откройте учебную схему как отдельный проект.</p></div>
+        <div className="template-list">{templateIds.map((id, index) => {
           const result = createTemplateProject(id, 'preview');
-          return result.ok && <button key={id} onClick={() => { void launch(id); }}>{result.value.title}</button>;
+          return result.ok && <button key={id} onClick={() => { void launch(id); }}><span className="card-index" aria-hidden="true">
+            {String(index + 1).padStart(2, '0')}</span>{result.value.title}</button>;
         })}</div>
       </section>
       <LessonLauncher launch={setLesson} />

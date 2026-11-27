@@ -35,12 +35,12 @@ test('keyboard_can_select_connect_and_undo', async ({ page }) => {
   const source = page.getByRole('button', { name: 'Газовый котёл · source', exact: true });
   await source.focus();
   await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: 'Порт supply · вода' }).focus();
+  await page.getByRole('button', { name: 'Подача', exact: true }).focus();
   await page.keyboard.press('Enter');
   const manifold = page.getByRole('button', { name: 'Пара коллекторов с расходомерами · manifold', exact: true });
   await manifold.focus();
   await page.keyboard.press('Enter');
-  await page.getByRole('button', { name: 'Порт feed · вода' }).focus();
+  await page.getByRole('button', { name: 'Вход подачи', exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('[data-link]')).toHaveCount(4);
   await page.keyboard.press('Control+z');

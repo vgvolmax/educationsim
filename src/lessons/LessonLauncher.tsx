@@ -1,3 +1,4 @@
+import { FilePicker } from '../ui/FilePicker';
 import { useState } from 'react';
 import { prepareLesson } from './authoring';
 import type { PreparedLesson } from './authoring';
@@ -23,15 +24,14 @@ export function LessonLauncher({ launch }: { launch(lesson: PreparedLesson): voi
     if (result.ok) { setError(''); launch(result.value); }
     else setError(result.diagnostics.map((item) => item.message).join(' '));
   }
-  return <section aria-label="Учебные задания" className="template-section">
-    <h2>Учебные задания</h2>
+  return <section id="lessons" aria-label="Учебные задания" className="template-section lesson-library">
+    <div className="home-section-heading"><div><p className="eyebrow">Практика</p><h2>Учебные задания</h2></div>
+      <p>Проходите задания в своём темпе и проверяйте выводы в расчёте.</p></div>
     <div className="template-list">{lessonLibrary.map((lesson) => <button key={lesson.id} onClick={() => useBundled(lesson)}>
       {lesson.id} · {lesson.title} · {lesson.minutes} мин</button>)}</div>
     <details className="lesson-author"><summary>Предпросмотр авторского урока</summary>
       <p>Файл проверяется и открывается локально как отдельная попытка. Он не заменяет встроенный урок.</p>
-      <label>Файл урока JSON<input type="file" accept=".json,application/json" onChange={(e) => {
-        const file = e.target.files?.[0]; e.target.value = ''; void inspect(file);
-      }} /></label>
+      <FilePicker label="Файл урока JSON" accept=".json,application/json" onChoose={(file) => { void inspect(file); }} />
       {error && <p role="alert" className="lesson-warning">{error}</p>}
       {draft && <button onClick={() => launch(draft)}>Открыть предпросмотр: {draft.definition.title}</button>}
     </details>
