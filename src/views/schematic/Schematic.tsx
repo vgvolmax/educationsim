@@ -1,5 +1,6 @@
 import type { RouteOverlay } from '../../editor/RouteTools';
 import { rectangleOf } from '../../project/editor-geometry';
+import { sketchPairKey, untracedPath } from './untraced-path';
 import type { Point2, ProjectDocument } from '../../project/types';
 
 type Props = { project: ProjectDocument; level: number; selected: string | null;
@@ -10,15 +11,28 @@ export function Schematic({ project, level, selected, onSelect, selectedLink, on
   const lookup = new Map(project.components.map((c) => [c.id, c]));
   const routes = new Map(project.loopRoutes.map((route) => [route.linkId, route]));
   const orders = new Map(components.map(({ id }, i) => [id, i]));
-  const lines = [...(water ? project.hydronicLinks.map((link) => ({ link, domain: 'water' as const })) : []),
-    ...(control ? project.controlLinks.map((link) => ({ link, domain: 'control' as const })) : [])].flatMap(({ link, domain }) => {
+  const connections = [...project.hydronicLinks.map((link) => ({ link, domain: 'water' as const })),
+    ...project.controlLinks.map((link) => ({ link, domain: 'control' as const }))].flatMap(({ link, domain }) => {
     const a = lookup.get(link.from.componentId), b = lookup.get(link.to.componentId);
     const route = routes.get(link.id);
     const onFloor = route ? rooms.some((r) => r.id === route.roomId) : a?.level === level || b?.level === level;
     if (!a || !b || !onFloor) return [];
     const drawn = route?.points ?? (domain === 'water' ? link.points : []);
-    const points = drawn.length ? drawn : [a.position, { x: b.position.x, z: a.position.z }, b.position];
-    return [{ id: link.id, domain, points, approximate: domain === 'water' && !drawn.length }];
+    return [{ id: link.id, domain, drawn, a, b }];
+  });
+  const groups = new Map<string, number>();
+  const cursors = new Map<string, number>();
+  connections.forEach(({ drawn, a, b }) => {
+    if (drawn.length) return;
+    const key = sketchPairKey(a, b);
+    groups.set(key, (groups.get(key) ?? 0) + 1);
+  });
+  const lines = connections.flatMap(({ id, domain, drawn, a, b }) => {
+    const key = sketchPairKey(a, b), index = cursors.get(key) ?? 0;
+    if (!drawn.length) cursors.set(key, index + 1);
+    if (domain === 'water' ? !water : !control) return [];
+    const points = drawn.length ? drawn : untracedPath(a, b, index, groups.get(key) ?? 1);
+    return [{ id, domain, points, approximate: domain === 'water' && !drawn.length }];
   });
   const pts = [...rooms.flatMap(({ outline }) => outline), ...components.map((c) => c.position), ...lines.flatMap((l) => l.points)];
   const minX = Math.min(0, ...pts.map((p) => p.x)) - .7, minZ = Math.min(0, ...pts.map((p) => p.z)) - .7;
@@ -42,7 +56,7 @@ export function Schematic({ project, level, selected, onSelect, selectedLink, on
         </g>; })}
         {lines.map(({ id, points, domain, approximate }) => <polyline key={domain + id} data-link={id}
           points={pointList(points)} onClick={onLinkSelect ? () => onLinkSelect(id) : undefined}
-          className={'plan-link ' + domain + (approximate ? ' approximate' : '') + (selectedLink === id ? ' lesson-identified' : '')}><title>{id}</title></polyline>)}
+          className={'plan-link ' + domain + (approximate ? ' approximate' : '') + (selectedLink === id ? ' lesson-identified' : '')}><title>{id}{approximate ? ' · трасса не задана' : ''}</title></polyline>)}
         {overlay?.points?.length && <polyline data-route-preview points={pointList([...overlay.points])} className="route-preview"><title>Черновик трассы</title></polyline>}
         {overlay?.mark && <circle cx={overlay.mark.x} cy={overlay.mark.z} r=".1" className="route-mark"><title>Место ошибки трассировки</title></circle>}
         {components.map((c) => <g key={c.id} onClick={() => onSelect(c.id)} className="plan-equipment">

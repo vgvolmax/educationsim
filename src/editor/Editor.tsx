@@ -61,6 +61,12 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome }:
   const nextPosition = useMemo(() => Array.from({ length: 221 }, (_, i) => ({ x: (20 + i % 8 * 13) / 20, z: (20 + Math.floor(i / 8) * 13) / 20 }))
     .find((slot) => components.every(({ position }) => Math.hypot(position.x - slot.x, position.z - slot.z) >= .42)) ?? { x: 1, z: 1 }, [components]);
   const rooms = project.rooms.filter((r) => r.level === level);
+  const equipmentById = new Map(project.components.map((element) => [element.id, element]));
+  function endpointLabel(endpoint: PortEndpoint) {
+    const element = equipmentById.get(endpoint.componentId);
+    const port = element && trainingRegistry.get(element.typeId)?.ports.find(({ id }) => id === endpoint.portId);
+    return (element ? equipmentLabel(element) : endpoint.componentId) + ' · ' + (port ? portLabel(port) : endpoint.portId);
+  }
   const links = [...project.hydronicLinks.map((link) => ({ link, domain: 'hydronic' as const })),
     ...project.controlLinks.map((link) => ({ link, domain: 'control' as const }))]
     .filter(({ link }) => components.some((c) => c.id === link.from.componentId || c.id === link.to.componentId));
@@ -197,7 +203,7 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome }:
         <h2>Связи этажа</h2>
         {!links.length && <p>Нет связей</p>}
         {links.map(({ domain, link }) => <div key={domain + link.id} className="link-row">
-          <span title={link.id}>{link.from.portId} → {link.to.portId}</span>
+          <span title={link.id}>{endpointLabel(link.from)} → {endpointLabel(link.to)}</span>
           <button aria-label={'Удалить связь ' + link.id} onClick={() => ctl.apply({ kind: 'disconnect', commandId: editorId('edit'), domain, linkId: link.id })}>Удалить</button>
         </div>)}
       </section>

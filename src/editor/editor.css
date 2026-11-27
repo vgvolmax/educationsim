@@ -131,3 +131,5 @@
   .drawing .room { stroke: CanvasText; }
   .drawing .room.selected, .drawing .plan-link.lesson-identified { stroke: Highlight; }
 }
+.link-row > span { min-inline-size: 0; overflow-wrap: anywhere; }
+.link-row > button { flex: 0 0 auto; }
