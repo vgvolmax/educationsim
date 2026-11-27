@@ -1,0 +1,16 @@
+# First-run benchmark: a sales manager learning a hydronic circuit
+
+This is a task-based comparison, not a feature ranking or a claim of measured user preference. It uses public product material, the open PhET interface, and the EducationSim application. Interplay and Danfoss here are assessed from their published workflows, not from a logged-in or installed trial.
+
+| Reference | What makes it easy to start | EducationSim before this change | Decision |
+| --- | --- | --- | --- |
+| [Interplay Learning: 3D simulation workflow](https://get.help.interplaylearning.com/wiki/spaces/IPLHC/pages/138674247/How%2B3D%2BSimulation%2BTraining%2BWorks%2Bat%2BInterplay%2BLearning) | Guided practice gives the learner a procedure; the assessment can remove guidance. | The home page emphasized the blank constructor. The existing introductory lesson was a secondary link and one of many lesson tiles. Assessed tasks already support delayed feedback. | Open a short guided lesson directly from the primary home action. Leave independent work, lesson browsing and assessments available. |
+| [PhET: Circuit Construction Kit](https://phet-dev.colorado.edu/html/circuit-construction-kit-dc/1.5.2/phet/circuit-construction-kit-dc_all_phet.html) and [design principles](https://phet.colorado.edu/en/about) | Intro and Lab separate levels of complexity. Visible measurements show what an action changes. | Our existing model can report real flow, but introductory feedback was mixed into a rubric, away from the diagram and the action. | Keep the first real measurement and the next instruction by the drawing. Show unmeasured as unmeasured, not as zero. Highlight the selected portion. |
+| [Danfoss Installer: floor heating workflow](https://www.danfoss.com/en/service-and-support/downloads/dhs/danfoss-installer-app/) | The tool starts from a job (for example, floor heating setup) and asks for inputs relevant to that job. | The blank editor is flexible; it is not the best starting point for someone learning what supply, loop and return mean. Our 2D/3D pair and guided connector selection are worth keeping for free construction. | Open a working teaching schematic for beginners; offer a separate editable copy after the lesson. Do not recast the app as a sizing calculator or a shopping guide. |
+
+## Acceptance
+
+- From a clean profile at a 1024 × 720 window, start the first lesson from the home page using the keyboard. New Project and the lesson library remain discoverable.
+- At first, no flow is shown. One real Worker step produces a flow reading beside the diagram. Select the supply, loop and return; diagram highlighting and the criteria still use the current attempt, and the completed guide offers an editable copy. Restart returns to the unmeasured state.
+- The same first experiment is available from the lesson library. Imported lessons and assessed tasks are not given the built-in help. Existing files, grading, calculation, 3D and template semantics stay the same.
+- Observe the first meaningful action, time to the first reading, and whether a participant can explain how the water returns, without coaching. Existing production pilot requirements still apply. A polished, lifelike service scene is a separate scope; do not trade the legibility of the teaching schematic for realism without evidence.
