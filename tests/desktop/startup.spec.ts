@@ -230,6 +230,19 @@ test('connects a guided water circuit from scratch in the extracted desktop buil
     await guide.getByRole('button', { name: /коллектор.*Вход подачи/i }).click();
     await expect(guide.getByRole('status')).toContainText('Соединение добавлено');
     await expect(page.locator('[data-link].water')).toHaveCount(1);
+    await page.getByRole('button', { name: /^Пара коллекторов.* · mount-/ }).click();
+    await guide.getByRole('button', { name: /^Обратка ·/ }).click();
+    await guide.getByRole('button', { name: /Газовый котёл · Обратка$/i }).click();
+    await guide.getByRole('button', { name: /^Подача петли 1/ }).click();
+    await guide.getByRole('button', { name: /Обратка петли 1$/ }).click();
+    const links = page.locator('polyline.plan-link.water');
+    await expect(links).toHaveCount(3);
+    const geometry = await links.evaluateAll((els) => (els as SVGPolylineElement[]).map((el) => {
+      const p = [...el.points].map(({ x, y }) => x + ',' + y).filter((point, i, all) => point !== all[i - 1]);
+      return { key: [p.join(' '), p.reverse().join(' ')].sort()[0], length: el.getTotalLength() };
+    }));
+    expect(new Set(geometry.map(({ key }) => key)).size).toBe(3);
+    expect(geometry.every(({ length }) => length > 0)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   } finally {
     await app.close();
