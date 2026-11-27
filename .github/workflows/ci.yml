@@ -5,6 +5,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      upload_windows_zip:
+        description: Upload the Windows ZIP after desktop verification.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -51,3 +57,24 @@ jobs:
           if ($exe.Count -ne 1) { throw "Expected exactly one EducationSim.exe; got $($exe.Count)" }
           $env:EDUCATIONSIM_DESKTOP_EXE = $exe[0].FullName
           npm run test:desktop
+      - name: Stage verified Windows ZIP
+        if: ${{ inputs.upload_windows_zip }}
+        shell: pwsh
+        run: |
+          $zip = @(Get-ChildItem out/make -Recurse -File -Filter '*.zip')
+          if ($zip.Count -ne 1) { throw "Expected exactly one Windows ZIP; got $($zip.Count)" }
+          $directory = New-Item -ItemType Directory -Path release-files
+          $file = Copy-Item -LiteralPath $zip[0].FullName -Destination (Join-Path $directory.FullName 'EducationSim-Windows-x64.zip') -PassThru
+          $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $($file.Name)" | Set-Content -LiteralPath (Join-Path $directory.FullName 'SHA256SUMS.txt') -Encoding ascii
+      - name: Upload verified Windows ZIP
+        if: ${{ inputs.upload_windows_zip }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: EducationSim-Windows-x64
+          path: |
+            release-files/EducationSim-Windows-x64.zip
+            release-files/SHA256SUMS.txt
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
