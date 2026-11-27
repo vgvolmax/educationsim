@@ -1,6 +1,7 @@
 import * as T from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createEquipment } from './createEquipment';
+import { bindCameraKeys, cameraTravel } from './camera-motion';
 import { createSceneQuality } from './quality';
 import { particleBudget, particleDistance, pipeFlow } from './flow';
 import { hasLiveFrame, sceneHeat } from './heatMap';
@@ -24,6 +25,7 @@ export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, proj
   const rig = new T.Group(); scene.add(rig);
   const camera = new T.PerspectiveCamera(43, 1, .04, 900);
   const controls = new OrbitControls(camera, canvas);
+  const keys = bindCameraKeys(canvas);
   controls.enableDamping = true; controls.dampingFactor = .12; controls.minDistance = .4; controls.maxDistance = 400;
   controls.maxPolarAngle = Math.PI * .48;
   const grid = new T.GridHelper(20, 40, 0xb5b6a2, 0xdad8cb); grid.position.y = data.floorY - .125; scene.add(grid);
@@ -86,8 +88,10 @@ export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, proj
   const target = box.isEmpty() ? new T.Vector3(2.5, data.floorY, 2) : box.getCenter(new T.Vector3());
   const size = box.isEmpty() ? new T.Vector3(6, 2, 4) : box.getSize(new T.Vector3());
   target.y = data.floorY + .15;
-  const distance = Math.max(4, size.x, size.z) * 1.35;
+  const baseDistance = Math.max(4, size.x, size.z) * 1.35;
   function cameraMode(view: 'orbit' | 'top' | 'slice') {
+    const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight) || 1;
+    const distance = baseDistance * Math.max(1, Math.min(3, 1 / aspect));
     controls.target.copy(target);
     if (view === 'top') camera.position.copy(target).add(new T.Vector3(0, distance * 1.26, .001));
     else if (view === 'slice') camera.position.copy(target).add(new T.Vector3(distance * .13, distance * .44, distance * 1.06));
@@ -144,21 +148,34 @@ export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, proj
       }
     }
     particles.count = drawn; particles.instanceMatrix.needsUpdate = true;
+    const movement = keys.movement();
+    if (movement.forward || movement.right) {
+      const heading = { x: controls.target.x - camera.position.x, z: controls.target.z - camera.position.z };
+      const step = cameraTravel(movement, heading, camera.position.distanceTo(controls.target), frameMs / 1000);
+      camera.position.x += step.x; camera.position.z += step.z;
+      controls.target.x += step.x; controls.target.z += step.z;
+    }
     controls.update(); renderer.render(scene, camera);
     frameId = requestAnimationFrame(animate);
   }
   frameId = requestAnimationFrame(animate);
   let pointer: { x: number; y: number } | null = null;
-  function down(e: PointerEvent) { pointer = { x: e.clientX, y: e.clientY }; }
+  function down(e: PointerEvent) {
+    if (e.button === 0) canvas.focus({ preventScroll: true });
+    pointer = e.button === 0 ? { x: e.clientX, y: e.clientY } : null;
+  }
   function pick(e: PointerEvent) {
     if (!pointer || Math.hypot(pointer.x - e.clientX, pointer.y - e.clientY) > 6) return;
+    pointer = null;
     const r = canvas.getBoundingClientRect();
     const ray = new T.Raycaster();
     ray.setFromCamera(new T.Vector2((e.clientX - r.left) * 2 / r.width - 1, 1 - (e.clientY - r.top) * 2 / r.height), camera);
     const hit = ray.intersectObjects([...equipment.values()], true)[0]?.object.userData.componentId;
     if (typeof hit === 'string') onPick(hit);
   }
+  const cancelPointer = () => { pointer = null; };
   canvas.addEventListener('pointerdown', down); canvas.addEventListener('pointerup', pick);
+  canvas.addEventListener('pointercancel', cancelPointer);
   return {
     cameraMode,
     focus(id: string) {
@@ -173,8 +190,9 @@ export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, proj
       camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target); controls.update();
     },
     dispose() {
-      dead = true; cancelAnimationFrame(frameId); ro.disconnect(); controls.dispose();
+      dead = true; cancelAnimationFrame(frameId); ro.disconnect(); keys.dispose(); controls.dispose();
       canvas.removeEventListener('pointerdown', down); canvas.removeEventListener('pointerup', pick);
+      canvas.removeEventListener('pointercancel', cancelPointer);
       scene.traverse((obj) => {
         if (obj instanceof T.Mesh || obj instanceof T.LineSegments) {
           obj.geometry.dispose();

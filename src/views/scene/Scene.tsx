@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { equipmentRegistry } from '../../project/registry';
 import { sceneInput } from './buildScene';
 import { canOpenCutaway, componentCutaway } from './componentCutaway';
 import { visualTimeScale } from './flow';
@@ -57,9 +58,11 @@ export function Scene({ project, level, selected, live, onSelect, onUnavailable 
       <label><input type="checkbox" checked={heat} onChange={(e) => setHeat(e.target.checked)} /> Тепловая карта</label>
       <label><input type="checkbox" checked={still} onChange={(e) => setStill(e.target.checked)} /> Без движения</label>
     </div>
-    <canvas ref={node} data-scene role="img" aria-label="Интерактивная 3D схема. Объекты доступны в списке слева." />
+    <p className="scene-help" id="scene-camera-help">Мышь: перетаскивание поворачивает вид, колесо меняет масштаб. Щёлкните по сцене или выделите её клавишей Tab: стрелки и WASD перемещают камеру.</p>
+    <canvas ref={node} data-scene role="img" tabIndex={0} aria-describedby="scene-camera-help"
+      aria-keyshortcuts="ArrowUp ArrowLeft ArrowDown ArrowRight W A S D" aria-label="Интерактивная 3D схема. Объекты доступны в списке слева." />
     <div className="scene-legend">
-      <p>{component ? 'Выбрано в 3D: ' + component.id : 'Выберите узел на схеме или в списке.'}</p>
+      <p>{component ? 'Выбрано в 3D: ' + (equipmentRegistry.get(component.typeId)?.titleRu ?? component.typeId) : 'Выберите узел на схеме или в списке.'}</p>
       <p>Поток: знак и скорость Q/A; масштаб частиц ×{numberRu(visualTimeScale, 2)} от физического. {frame?.stale ?
         'Нет актуального кадра, последний тик ' + frame.snapshot.tick + '.' : frame ? 'Модельный тик ' + frame.snapshot.tick + '.' : 'Расчёт не запущен.'}</p>
       {section && <p>Условный разрез: основание, теплоизоляция, стяжка и покрытие. Толщины на рисунке не паспортные.</p>}
