@@ -35,3 +35,21 @@
 .lesson-author summary { cursor: pointer; color: var(--brand-strong); font-size: .88rem; font-weight: 650; }
 .lesson-hint, .lesson-warning { border-radius: .55rem; color: var(--warn-ink); }
 .lesson-bench .lesson-actions button[aria-pressed=true] { background: var(--aqua); color: var(--brand-strong); }
+
+.first-lesson-guide {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .45rem .7rem; align-items: center;
+  margin-top: .55rem; padding: .55rem .7rem; background: var(--aqua); color: var(--brand-strong);
+  border: 1px solid #8ebdb5; border-radius: var(--radius);
+}
+.first-lesson-step {
+  align-self: start; white-space: nowrap; border: 1px solid currentColor; border-radius: 2rem;
+  padding: .15rem .53rem; font-size: .77rem; font-weight: 750;
+}
+.first-lesson-guide p { margin: .13rem 0 0; font-size: .86rem; }
+.first-lesson-guide .first-lesson-reading { font-weight: 720; font-variant-numeric: tabular-nums; text-align: right; }
+.first-lesson-next-action { grid-column: 2 / -1; }
+.first-lesson-next-action button { background: var(--paper); }
+@media (max-width: 980px) {
+  .first-lesson-guide { grid-template-columns: auto minmax(0, 1fr); }
+  .first-lesson-guide .first-lesson-reading { grid-column: 2; text-align: start; }
+}

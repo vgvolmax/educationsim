@@ -12,12 +12,14 @@ import type { Workspace } from '../storage/project-transfer';
 import type { SavedProject } from '../storage/projects';
 import { LessonLauncher } from '../lessons/LessonLauncher';
 import { LessonPanel } from '../lessons/LessonPanel';
+import { prepareLesson } from '../lessons/authoring';
+import { firstLesson } from '../lessons/first-lesson';
 import type { PreparedLesson } from '../lessons/authoring';
 import './shell.css';
 
 export function App() {
   const ctl = useProject();
-  const [lesson, setLesson] = useState<PreparedLesson | null>(null);
+  const [lesson, setLesson] = useState<{ prepared: PreparedLesson; introductory: boolean } | null>(null);
   const [editing, setEditing] = useState(false);
   const [preset, setPreset] = useState<TemplateId | undefined>();
   const [artifacts, setArtifacts] = useState(emptyArtifacts);
@@ -64,6 +66,14 @@ export function App() {
     setLesson(null); save.select(saved); ctl.open(next.project); setPreset(next.preset);
     setArtifacts({ captures: next.captures, records: next.records }); setEditing(true);
   }
+  function openLesson(prepared: PreparedLesson, introductory = false) {
+    setLesson({ prepared, introductory });
+  }
+  function openFirstLesson() {
+    const result = prepareLesson(firstLesson);
+    if (result.ok) openLesson(result.value, true);
+    else ctl.setError(result.diagnostics[0].message);
+  }
   async function launch(template?: TemplateId) {
     if (!await save.flush()) return;
     if (!template) pick({ project: createEmptyProject(editorId('project')), ...emptyArtifacts() }, null);
@@ -90,7 +100,7 @@ export function App() {
       if (!workspace || save.state.saving) return;
       pick(cloneWorkspace(workspace, editorId('project')), null);
     }} />;
-  if (lesson) return <>{save.closeToken && tools}<LessonPanel key={lesson.definition.id} lesson={lesson}
+  if (lesson) return <>{save.closeToken && tools}<LessonPanel key={lesson.prepared.definition.id} lesson={lesson.prepared} introductory={lesson.introductory}
     onBack={() => setLesson(null)} onEditor={(seed) => {
       void save.flush().then((committed) => { if (committed) pick({ ...seed, ...emptyArtifacts() }, null); });
     }} /></>;
@@ -99,8 +109,9 @@ export function App() {
   return (
     <main className="shell">
       <div className="home-brand"><span className="brand-mark" aria-hidden="true">↳</span><strong>EducationSim</strong><span>Тренажёр для менеджеров</span></div>
-      <HomeHero actions={<>
-        <button className="primary" onClick={() => { void launch(); }}>Новый проект</button>
+      <HomeHero lessonMinutes={firstLesson.minutes} actions={<>
+        <button className="primary" onClick={openFirstLesson}>Начать первый урок</button>
+        <button onClick={() => { void launch(); }}>Новый проект</button>
         {ctl.history && <button onClick={() => setEditing(true)}>Вернуться к текущему проекту</button>}
       </>} />
       {tools}
@@ -121,7 +132,7 @@ export function App() {
             {String(index + 1).padStart(2, '0')}</span>{result.value.title}</button>;
         })}</div>
       </section>
-      <LessonLauncher launch={setLesson} />
+      <LessonLauncher launch={openLesson} />
       <footer>
         <p role="status">{runtime}</p>
         <a href="https://volmax.ru/catalog/" target="_blank" rel="noreferrer">Каталог ВОЛМАКС ↗</a>

@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 
-export function HomeHero({ actions }: { actions: ReactNode }) {
+export function HomeHero({ actions, lessonMinutes }: { actions: ReactNode; lessonMinutes: number }) {
   return <section className="home-hero" aria-labelledby="home-title">
     <div className="home-hero-copy">
       <p className="eyebrow">Учебная лаборатория · Волмакс</p>
       <h1 id="home-title">Волмакс · Тёплый пол</h1>
-      <p className="intro">Соберите водяную схему, запустите расчёт и посмотрите, что меняется при регулировке.</p>
+      <p className="intro">За {lessonMinutes} минут проследите путь воды от подачи до обратки. Или соберите и испытайте собственную схему.</p>
       <div className="actions">{actions}<a href="#lessons" className="hero-link">К учебным заданиям <span aria-hidden="true">↓</span></a></div>
     </div>
     <div className="home-visual" aria-hidden="true">

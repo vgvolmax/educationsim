@@ -3,8 +3,9 @@ import { Schematic } from '../views/schematic/Schematic';
 import { editorId } from '../editor/useProject';
 import { createSimulationClient } from '../worker/client';
 import type { LessonAction, LessonCase, LessonCriterion, LessonMetric, PreparedLesson } from './authoring';
-import { admittedAction, applyLessonAction, freeCopy, gradeLesson, startLessonState } from './lesson';
+import { admittedAction, applyLessonAction, freeCopy, gradeLesson, observe, startLessonState } from './lesson';
 import type { LessonState } from './lesson';
+import { FirstLessonGuide } from './FirstLessonGuide';
 import type { SessionView } from '../simulation/session';
 import type { SimulationRecord } from '../simulation/replay';
 import { equipmentRegistry } from '../project/registry';
@@ -12,7 +13,7 @@ import type { WorkspaceDesktop } from '../storage/desktop-api';
 import './lesson.css';
 
 type Client = ReturnType<typeof createSimulationClient>;
-type Props = { lesson: PreparedLesson; onBack(): void; onEditor(seed: NonNullable<ReturnType<typeof freeCopy>>): void };
+type Props = { lesson: PreparedLesson; introductory?: boolean; onBack(): void; onEditor(seed: NonNullable<ReturnType<typeof freeCopy>>): void };
 
 const measurementNames: Record<LessonMetric, string> = {
   flow: 'Расход', pressure: 'Давление', opening: 'Открытие', power: 'Мощность',
@@ -33,7 +34,7 @@ function measurementLabel(rule: Extract<LessonCriterion, { type: 'range' }>, sel
   return measurementNames[rule.metric] + ' · ' + target;
 }
 
-export function LessonPanel({ lesson, onBack, onEditor }: Props) {
+export function LessonPanel({ lesson, introductory, onBack, onEditor }: Props) {
   const [state, setState] = useState<LessonState>(() => startLessonState(lesson));
   const [sessionKey, setSessionKey] = useState(0);
   const [highlight, setHighlight] = useState<string | null>(null);
@@ -54,9 +55,19 @@ export function LessonPanel({ lesson, onBack, onEditor }: Props) {
   const actions = lesson.definition.actions.filter((a) => !a.forCase || a.forCase === state.caseId);
   const primaryAction = actions.find((a) => a.type === 'step');
   const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (introductory) heading.current?.focus();
+  }, [introductory]);
   const renderAction = (action: LessonAction) => <button key={action.id} onClick={() => perform(action.id)}
     disabled={(action.type === 'step' || action.type === 'command') && clients.current.get(state.caseId)?.state.mode !== 'paused'}
     aria-pressed={action.type === 'answer' ? state.answers[action.field] === action.value : undefined}>{action.label}</button>;
+  const secondaryActions = <section className="lesson-actions" aria-label="Разрешённые действия">
+    {actions.filter((action) => action !== primaryAction).map(renderAction)}
+  </section>;
+  const freeCopyAction = <button onClick={() => {
+    const seed = freeCopy(lesson, state.caseId, editorId('project'));
+    if (seed) onEditor(seed);
+  }}>Открыть свободную копию</button>;
   function displayReading(rule: typeof lesson.definition.criteria[number] | undefined, value: number | null | undefined) {
     if (value === null) return ' · Нет данных';
     if (value === undefined) return '';
@@ -152,11 +163,12 @@ export function LessonPanel({ lesson, onBack, onEditor }: Props) {
           <span>{view ? 'Модельный тик: ' + view.snapshot.tick : 'Готовим учебную схему…'}</span>
           {primaryAction && renderAction(primaryAction)}
         </div></div>
+        {introductory && <FirstLessonGuide flow={observe(view, 'flow', 'link:pipe-a')} passed={grade.passed}
+          nextAction={grade.passed ? freeCopyAction : undefined} />}
+        {introductory && secondaryActions}
         <Schematic project={bound.project} level={bound.project.viewPreferences.level} selected={highlight} selectedLink={highlight}
           onSelect={inspect} onLinkSelect={inspect} water control />
-        <section className="lesson-actions" aria-label="Разрешённые действия">
-          {actions.filter((action) => action !== primaryAction).map(renderAction)}
-        </section>
+        {!introductory && secondaryActions}
       </section>
       <aside className="lesson-rubric">
         <h2>Проверка задания</h2>
@@ -189,11 +201,14 @@ export function LessonPanel({ lesson, onBack, onEditor }: Props) {
       view?.diagnostics.map((d) => d.message).join(' ') || 'Прогон остановлен. Сбросьте попытку.'}</p>}
     <div className="lesson-actions">
       <button disabled={exporting} onClick={() => {
+        // A click immediately after reset must not be offered against the old paused client.
+        for (const client of clients.current.values()) client.dispose();
+        clients.current.clear();
         setState(startLessonState(lesson)); setSessionKey((n) => n + 1);
         setSubmitted(false); setReview(false); setError(''); setHint(0); setHighlight(null);
         heading.current?.focus();
       }}>Начать попытку заново</button>
-      <button onClick={() => { const seed = freeCopy(lesson, state.caseId, editorId('project')); if (seed) onEditor(seed); }}>Открыть свободную копию</button>
+      {(!introductory || !grade.passed) && freeCopyAction}
       <button disabled={exporting || state.actions.length === 0 || (assessed && !submitted)} onClick={() => { void report(); }}>Сохранить отчёт наставнику</button>
     </div>
   </main>;

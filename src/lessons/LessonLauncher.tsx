@@ -2,10 +2,11 @@ import { FilePicker } from '../ui/FilePicker';
 import { useState } from 'react';
 import { prepareLesson } from './authoring';
 import type { PreparedLesson } from './authoring';
+import { firstLesson } from './first-lesson';
 import { lessonLibrary } from './lesson-library';
 import './lesson.css';
 
-export function LessonLauncher({ launch }: { launch(lesson: PreparedLesson): void }) {
+export function LessonLauncher({ launch }: { launch(lesson: PreparedLesson, introductory?: boolean): void }) {
   const [draft, setDraft] = useState<PreparedLesson | null>(null);
   const [error, setError] = useState('');
   async function inspect(file: File | undefined) {
@@ -21,7 +22,7 @@ export function LessonLauncher({ launch }: { launch(lesson: PreparedLesson): voi
   }
   function useBundled(raw: typeof lessonLibrary[number]) {
     const result = prepareLesson(raw);
-    if (result.ok) { setError(''); launch(result.value); }
+    if (result.ok) { setError(''); launch(result.value, raw.id === firstLesson.id); }
     else setError(result.diagnostics.map((item) => item.message).join(' '));
   }
   return <section id="lessons" aria-label="Учебные задания" className="template-section lesson-library">

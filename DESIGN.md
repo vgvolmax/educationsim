@@ -7,3 +7,5 @@ Use one visual language for start, editing, the catalog, 3D, lessons, diagnostic
 Keep familiar Windows keyboard controls, visible focus and forced-colors support. Distinguish loading, ready, unavailable and failure. An incomplete action is disabled with a reason, never presented as a fake workflow. Keep technical checks small on startup. Give the drawing and diagnostics priority in the editor.
 
 Keep the connection task by the 2D drawing: name equipment and connectors in Russian, use the same visible node numbers, show compatible destinations, and make cancellation, empty choices and success explicit. The manual inspector uses the same port names; topology validation stays authoritative. The drawing is not the only way to operate the editor. Catalog cards are source references and model analogues, not purchase advice.
+
+Start with a concrete experiment, not a blank canvas, for a new manager. Surface the next action and its real measured consequence beside the schematic. Keep free construction one click away and keep guided instruction out of assessed and imported tasks. See `docs/qa/first-run-benchmark.md` for the comparison and acceptance route.
