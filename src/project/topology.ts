@@ -104,6 +104,11 @@ export function checkConnection(project: ProjectDocument, candidate: LinkCandida
   return assess(index(project), candidate, registry, false);
 }
 
+export function createConnectionChecker(project: ProjectDocument, registry: ComponentRegistry): (candidate: LinkCandidate) => ConnectionDecision {
+  const topology = index(project);
+  return (candidate) => assess(topology, candidate, registry, false);
+}
+
 export function connectionDiagnostic(decision: RejectedConnection, path: string): Diagnostic {
   return { code: decision.reason, path: `${path}.${decision.at}.portId`, message: explanation[decision.reason],
     severity: 'error', componentId: decision.port.componentId, portId: decision.port.portId };

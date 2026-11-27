@@ -98,3 +98,27 @@
 .comparison-table table { width: 100%; text-align: left; border-collapse: collapse; overflow-wrap: anywhere; }
 .comparison-table th, .comparison-table td { border: 1px solid var(--edge); padding: .25rem .35rem; font-size: .8rem; }
 @media (max-width: 510px) { .editor-center { order: -1; } }
+
+/* The connection task belongs with the drawing, not below component properties. */
+.work-panel > *, .work-tree > *, .editor-section, .room-fields label { min-width: 0; }
+.editor select, .editor input:not([type=checkbox]), .editor textarea { box-sizing: border-box; max-inline-size: 100%; }
+.editor .replacement { grid-template-columns: minmax(0, 1fr); }
+.editor .replacement select { inline-size: 100%; }
+.editor button, .lesson-bench button { overflow-wrap: anywhere; }
+.mount-coordinates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+.connection-guide { margin: .8rem min(2vw, 1.2rem) 0; padding: .7rem .85rem; background: var(--paper);
+  border: 1px solid var(--edge); border-inline-start: 4px solid var(--teal); border-radius: .24rem; overflow-wrap: anywhere; }
+.connection-guide header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem 1rem; }
+.connection-guide h2 { font-size: 1rem; }
+.connection-guide header span { color: #5e4639; font: 600 .76rem/1.3 monospace; }
+.connection-guide .connection-step { margin-block: .45rem; font-size: .88rem; }
+.connection-guide .connection-options { display: flex; flex-wrap: wrap; gap: .35rem; margin-block: .4rem; }
+.connection-guide button { min-height: 2rem; text-align: left; font-size: .86rem; }
+.connection-guide button small { font-size: inherit; font-weight: normal; }
+.connection-destinations .connection-options { max-height: 12rem; overflow: auto; padding: .25rem; }
+.connection-destinations > p { margin-block: .35rem; }
+.connection-status:not(:empty) { border-top: 1px solid var(--edge); margin-top: .5rem; padding-top: .4rem; font-size: .86rem; }
+@media (max-width: 510px) {
+  .connection-guide { margin-inline: .6rem; }
+  .work-tree { border-right: 0; border-top: 1px solid var(--edge); }
+}

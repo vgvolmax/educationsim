@@ -200,3 +200,37 @@ test('launches the packaged app offline, retains storage and rejects a second in
     await restarted.close();
   }
 });
+
+test('connects a guided water circuit from scratch in the extracted desktop build', async ({}, testInfo) => {
+  test.setTimeout(90_000);
+  const executablePath = process.env.EDUCATIONSIM_DESKTOP_EXE;
+  if (!executablePath) throw new Error('Set EDUCATIONSIM_DESKTOP_EXE to the executable from the extracted ZIP.');
+  const app = await _electron.launch({
+    executablePath,
+    env: { ...process.env, EDUCATIONSIM_TEST_PROFILE: testInfo.outputPath('Учебный профиль'), EDUCATIONSIM_TEST_OFFLINE: '1' },
+    args: process.platform === 'linux' ? ['--ozone-platform=headless'] : [],
+    timeout: 30_000,
+  });
+  try {
+    const page = await app.firstWindow();
+    await page.getByRole('button', { name: 'Новый проект', exact: true }).click();
+    const guide = page.getByRole('region', { name: 'Соединение элементов' });
+    await expect(guide).toBeInViewport();
+    await guide.getByRole('button', { name: 'К установке оборудования' }).click();
+    const type = page.getByLabel('Учебное оборудование');
+    await expect(type).toBeFocused();
+    await page.getByRole('button', { name: 'Установить', exact: true }).click();
+    await type.selectOption('training-manifold-two-way');
+    await page.getByRole('button', { name: 'Установить', exact: true }).click();
+    await page.getByRole('button', { name: /^Газовый котёл · mount-/ }).click();
+    await page.getByRole('button', { name: 'К соединениям', exact: true }).click();
+    await expect(guide.getByRole('heading')).toBeFocused();
+    await guide.getByRole('button', { name: /^Подача/ }).click();
+    await guide.getByRole('button', { name: /коллектор.*Вход подачи/i }).click();
+    await expect(guide.getByRole('status')).toContainText('Соединение добавлено');
+    await expect(page.locator('[data-link].water')).toHaveCount(1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  } finally {
+    await app.close();
+  }
+});
