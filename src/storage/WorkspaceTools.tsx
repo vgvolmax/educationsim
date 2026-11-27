@@ -1,3 +1,4 @@
+import { FilePicker } from '../ui/FilePicker';
 import { useRef, useState } from 'react';
 import { readWorkspace, workspaceLimit, writeWorkspace } from './project-transfer';
 import type { Workspace } from './project-transfer';
@@ -51,12 +52,10 @@ export function WorkspaceTools({ workspace, save, onImport, onDuplicate }: {
 
   return <section className="workspace-tools" aria-label="Файлы проекта">
     <div className="workspace-actions">
-      <label>Импорт проекта JSON<input type="file" accept=".json,application/json" onChange={(e) => {
-        const file = e.target.files?.[0]; e.target.value = ''; void preview(file);
-      }} /></label>
+      <FilePicker label="Импорт проекта JSON" accept=".json,application/json" onChoose={(file) => { void preview(file); }} />
       {workspace && <button onClick={() => { void download(); }}>Экспорт проекта и прогонов</button>}
       {workspace && <button onClick={onDuplicate}>Создать копию проекта</button>}
-      {workspace && <p>{save.state.saving ? 'Сохраняем локально…' : save.state.dirty || !save.state.hasSaved ? 'Есть несохранённые изменения.' : 'Проект сохранён локально.'}</p>}
+      {workspace && <p className="save-state" data-save={save.state.error ? 'error' : save.state.saving || save.state.dirty || !save.state.hasSaved ? 'pending' : 'ready'}>{save.state.error ? 'Не удалось сохранить.' : save.state.saving ? 'Сохраняем локально…' : save.state.dirty || !save.state.hasSaved ? 'Есть несохранённые изменения.' : 'Проект сохранён локально.'}</p>}
     </div>
     {reading && <p>Проверяем файл…</p>}
     {error && <div className="workspace-warning" role="alert"><strong>Импорт не выполнен.</strong> {error}</div>}

@@ -1,3 +1,4 @@
+import { FilePicker } from '../ui/FilePicker';
 import { useMemo, useState } from 'react';
 import type { CatalogContext, CatalogKit, CatalogOffer } from './catalog';
 import { offerKey } from './catalog';
@@ -94,8 +95,8 @@ export function CatalogPanel({ project, selected, level, ctl, onPlaced }: Props)
     <details className="editor-section" open><summary>Локальное обновление</summary>
       <div className="catalog-tools">
         <label>Имя выпуска для CSV<input value={csvId} onChange={(e) => setCsvId(e.target.value)} placeholder="local-2026-11" /></label>
-        <label>Файл обновления каталога<input type="file" accept=".json,.csv" disabled={catalog.writing}
-          onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; void catalog.preview(file, csvId, new Date().toISOString().slice(0, 10)); }} /></label>
+        <FilePicker label="Файл обновления каталога" accept=".json,.csv" disabled={catalog.writing}
+          onChoose={(file) => { void catalog.preview(file, csvId, new Date().toISOString().slice(0, 10)); }} />
       </div>
       {(catalog.archive.length > 0 || catalog.source === 'local') && <form className="catalog-tools"
         key={catalog.source + ':' + current.releaseId} onSubmit={(event) => {

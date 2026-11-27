@@ -57,8 +57,7 @@ if (!app.requestSingleInstanceLock()) {
     if (!devUrl) installAppProtocol(join(__dirname, '../renderer', MAIN_WINDOW_VITE_NAME));
 
     window = new BrowserWindow({
-      title: 'EducationSim', width: 1200, height: 800,
-      backgroundColor: '#f5f1e8',
+      title: 'EducationSim', width: 1200, height: 800, autoHideMenuBar: true, backgroundColor: '#eaf1f0',
       webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false,
         preload: join(__dirname, 'workspace-preload.cjs') },
     });

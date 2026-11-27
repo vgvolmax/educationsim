@@ -1,11 +1,11 @@
 .scene-area { margin: .8rem min(2vw, 1.2rem); min-width: 0; }
 .scene-options { display: flex; flex-wrap: wrap; align-items: center; gap: .42rem; margin-bottom: .5rem; }
-.scene-area canvas { display: block; width: 100%; height: clamp(18rem, 55vh, 38rem); box-sizing: border-box; border: 1px solid #c5bcab;
+.scene-area canvas { display: block; width: 100%; height: clamp(18rem, 55vh, 38rem); box-sizing: border-box; border: 1px solid var(--edge);
   background: #f2eee1; cursor: grab; touch-action: none; }
 .scene-area canvas:active { cursor: grabbing; }
-.scene-legend { font-size: .82rem; color: #4d5148; margin-block: .55rem; }
+.scene-legend { font-size: .82rem; color: var(--muted); margin-block: .55rem; }
 .scene-legend p { margin: .25rem 0; }
-.scene-cutaway { border: 1px solid #c5bcab; padding: .65rem .8rem; margin-top: .55rem; background: #fbfaf5; }
+.scene-cutaway { border: 1px solid var(--edge); padding: .65rem .8rem; margin-top: .55rem; background: var(--paper); }
 .scene-cutaway h3 { margin: 0 0 .3rem; }
 .cutaway-paths { display: grid; gap: .38rem; margin: .55rem 0; }
 .cutaway-path { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .32rem .55rem; background: #e5eeeb; border-left: 5px solid #3d7a82; }
@@ -13,6 +13,11 @@
 .cutaway-path span { font: .84rem/1.4 monospace; }
 .cutaway-diagram { display: block; width: min(100%, 26rem); max-height: 17rem; margin-top: .45rem; }
 
-.scene-area .scene-help { margin: 0 0 .5rem; font-size: .82rem; color: #4d5148; }
+.scene-area .scene-help { margin: 0 0 .5rem; font-size: .82rem; color: var(--muted); }
 .scene-area canvas:focus-visible { outline: 2px solid #155752; outline-offset: 2px; }
 @media (forced-colors: active) { .scene-area canvas:focus-visible { outline-color: Highlight; } }
+.scene-area canvas, .scene-cutaway { border-radius: var(--card-radius); }
+.scene-options button { font-size: .86rem; }
+.scene-options label { font-size: .88rem; }
+.scene-cutaway { box-shadow: var(--lift); }
+.cutaway-path { border-radius: .55rem; }
