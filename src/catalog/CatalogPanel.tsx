@@ -53,7 +53,7 @@ export function CatalogPanel({ project, selected, level, ctl, onPlaced }: Props)
   const kit = current.kits.find((k) => offerKey(k.channel, k.offerId) === selection);
   const profile = current.products.find((p) => p.id === offer?.productId);
   return <section className="catalog-panel" data-testid="catalog-panel" data-active-release={current.releaseId} aria-label="Каталог ВОЛМАКС">
-    <h2>Каталог ВОЛМАКС</h2><p>Версия: {current.releaseId}</p>
+    <h2>Каталог ВОЛМАКС</h2><p>Справочник для обучения менеджеров. Не подбирает товары к покупке.</p><p>Версия: {current.releaseId}</p>
     <p>{current.publishedOn} · {catalog.loading ? 'Читаем локальный профиль…' : catalog.source === 'embedded' ? 'Встроенный выпуск' : 'Локальный импорт'}</p>
     <div className="catalog-tools">
       <label>Поиск по артикулу, ID или названию<input type="search" value={query} onChange={(e) => {
@@ -76,7 +76,7 @@ export function CatalogPanel({ project, selected, level, ctl, onPlaced }: Props)
         {!offer ? <p>Выберите карточку. Исходные данные не означают пригодность к продаже или монтажу.</p> : <>
           <h3>{offer.title}</h3><p>{offer.brand || 'Марка не указана'} · {offer.article || 'Артикул не указан'}</p>
           <p><strong>{decision[offer.scope]}</strong></p>
-          <p className="catalog-caution">Рекомендация не подтверждена.</p>
+          <p className="catalog-caution">Учебная карточка. Не используйте её как рекомендацию к покупке.</p>
           {offer.clearance && <p>На исходной карточке отмечена ликвидация. Проверьте остаток и условия отдельно.</p>}
           {offer.review && <><p><strong>{offer.review.role}</strong></p><p>{offer.review.use} · {evidence[offer.review.basis] ?? offer.review.basis}</p>
             <p>{offer.review.evidence}</p><p>Что проверить: {offer.review.next}</p></>}

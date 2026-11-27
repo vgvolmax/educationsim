@@ -15,7 +15,7 @@ test('catalog_uses_bundled_release_on_first_start and searches_by_product_or_sho
   await expect(page.getByText('Версия: volmax-public-20261126-v1')).toBeVisible();
   await find(page, '35495', '35495');
   await expect(page.getByText('Ограничитель температуры теплоносителя GAPPO G1495')).toBeVisible();
-  await expect(page.getByText('Рекомендация не подтверждена.')).toBeVisible();
+  await expect(page.getByText('Учебная карточка. Не используйте её как рекомендацию к покупке.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Установить учебный аналог' })).toHaveCount(0);
   await find(page, 'G1494', '35494');
   await expect(page.getByText('Монтажный термоблок GAPPO G1494')).toBeVisible();

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, FormEvent, KeyboardEvent, SetStateAction } from 'react';
 import { rectangleOf } from '../project/editor-geometry';
 import { equipmentRegistry, trainingRegistry } from '../project/registry';
@@ -7,6 +7,7 @@ import { parseRussianDecimal } from '../project/units';
 import { Inspector, StartConditions } from './Inspector';
 import { SimulationPanel } from './SimulationPanel';
 import type { TemplateId } from '../project/templates';
+import { ConnectionGuide, equipmentLabel, mayCrossLevels, portLabel } from './ConnectionGuide';
 import { PortInspector } from './PortInspector';
 import { RouteTools } from './RouteTools';
 import type { RouteOverlay } from './RouteTools';
@@ -44,13 +45,21 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome }:
   const [liveScene, setLiveScene] = useState<SceneLive | null>(null);
   const [level, setLevel] = useState(project.viewPreferences.level);
   const [selected, setSelected] = useState<string | null>(null);
-  const [pending, setPending] = useState<PortEndpoint | null>(null);
+  const [pendingChoice, setPending] = useState<PortEndpoint | null>(null);
+  const [connectionMessage, setConnectionMessage] = useState('');
+  const [placementKey, setPlacementKey] = useState(0);
+  const mountSelect = useRef<HTMLSelectElement>(null);
+  const guideTitle = useRef<HTMLHeadingElement>(null);
   const [overlay, setOverlay] = useState<RouteOverlay & { revision?: number }>({});
   const [typeId, setTypeId] = useState('training-heat-source');
   const [water, setWater] = useState(true), [control, setControl] = useState(true);
   const room = project.rooms.find((r) => r.id === selected);
   const component = project.components.find((c) => c.id === selected);
-  const components = project.components.filter((c) => c.level === level);
+  const pendingType = project.components.find((c) => c.id === pendingChoice?.componentId)?.typeId;
+  const pending = pendingType && trainingRegistry.get(pendingType)?.ports.some((p) => p.id === pendingChoice?.portId) ? pendingChoice : null;
+  const components = useMemo(() => project.components.filter((c) => c.level === level), [project.components, level]);
+  const nextPosition = useMemo(() => Array.from({ length: 221 }, (_, i) => ({ x: (20 + i % 8 * 13) / 20, z: (20 + Math.floor(i / 8) * 13) / 20 }))
+    .find((slot) => components.every(({ position }) => Math.hypot(position.x - slot.x, position.z - slot.z) >= .42)) ?? { x: 1, z: 1 }, [components]);
   const rooms = project.rooms.filter((r) => r.level === level);
   const links = [...project.hydronicLinks.map((link) => ({ link, domain: 'hydronic' as const })),
     ...project.controlLinks.map((link) => ({ link, domain: 'control' as const }))]
@@ -60,13 +69,14 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome }:
     document.querySelector<HTMLElement>('.editor h1')?.focus();
   }, []);
 
+  function cancelConnection() { setPending(null); setConnectionMessage(''); }
   function keyEdit(e: KeyboardEvent) {
-    if (e.key === 'Escape') { setPending(null); return; }
+    if (e.key === 'Escape') { cancelConnection(); return; }
     if (!(e.ctrlKey || e.metaKey) || e.altKey || (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable="true"]'))) return;
     const key = e.key.toLowerCase();
     if (key === 'z' || key === 'y') {
       e.preventDefault();
-      setPending(null);
+      cancelConnection();
       ctl.changeHistory(key === 'y' || e.shiftKey ? 'redo' : 'undo');
     }
   }
@@ -85,17 +95,17 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome }:
     const id = editorId('mount');
     if (ctl.apply({ kind: 'add_component', commandId: editorId('edit'),
       component: { id, typeId, position: { x, y: 3 * level, z }, level, roomId: null, catalogSnapshotId: null, parameters: { ...type.defaultParameters } },
-    })) setSelected(id);
+    })) { setSelected(id); setPlacementKey((key) => key + 1); }
   }
-  function pickPort(id: string) {
-    if (!component) return;
-    const next = { componentId: component.id, portId: id };
-    if (!pending) { setPending(next); ctl.setError(null); return; }
+  function pickPort(next: PortEndpoint) {
+    const destination = project.components.find((c) => c.id === next.componentId);
+    if (!destination) return;
+    if (!pending) { setPending(next); setConnectionMessage(''); ctl.setError(null); return; }
     if (pending.componentId === next.componentId && pending.portId === next.portId) { setPending(null); return; }
     const start = project.components.find((c) => c.id === pending.componentId);
     const from = start && trainingRegistry.get(start.typeId)?.ports.find((p) => p.id === pending.portId);
     if (!start || !from) { setPending(null); ctl.setError('Исходный порт больше недоступен.'); return; }
-    if (from.domain === 'hydronic' && start.level !== component.level && ![start, component].some((c) => equipmentRegistry.get(c.typeId)?.variant === 'riser')) {
+    if (!mayCrossLevels(start, destination, from.domain)) {
       ctl.setError('Для межэтажной связи добавьте стояк.'); return;
     }
     const ends = { id: editorId('link'), from: pending, to: next };
@@ -104,7 +114,12 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome }:
       ? ctl.apply({ kind: 'connect_hydronic', commandId, link: { ...ends, points: [], materialId: 'training-pipe',
         innerDiameterM: (from.connector.family === 'tube' ? from.connector.diameterMm : 16) * .00075 } })
       : ctl.apply({ kind: 'connect_control', commandId, link: ends });
-    if (done) setPending(null);
+    if (done) {
+      const endPort = trainingRegistry.get(destination.typeId)?.ports.find((p) => p.id === next.portId);
+      setPending(null);
+      setConnectionMessage('Соединение добавлено: ' + equipmentLabel(start) + ' · ' + portLabel(from) + ' → ' +
+        equipmentLabel(destination) + ' · ' + (endPort ? portLabel(endPort) : next.portId) + '.');
+    }
   }
   return <main className="editor" onKeyDown={keyEdit}>
     <header className="work-header">
@@ -117,8 +132,8 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome }:
         {[0, 1, 2].map((n) => <option key={n} value={n}>{n + 1}</option>)}
       </select></label>
       <button onClick={addRoom} disabled={project.rooms.length >= 12}>Добавить комнату</button>
-      <button disabled={!ctl.history?.past.length} onClick={() => { setPending(null); ctl.changeHistory('undo'); }}>Отменить</button>
-      <button disabled={!ctl.history?.future.length} onClick={() => { setPending(null); ctl.changeHistory('redo'); }}>Повторить</button>
+      <button disabled={!ctl.history?.past.length} onClick={() => { cancelConnection(); ctl.changeHistory('undo'); }}>Отменить</button>
+      <button disabled={!ctl.history?.future.length} onClick={() => { cancelConnection(); ctl.changeHistory('redo'); }}>Повторить</button>
       <button aria-expanded={catalogOpen} onClick={() => setCatalogOpen((open) => !open)}>Каталог ВОЛМАКС</button>
       <button aria-pressed={viewMode === '2d'} onClick={() => setViewMode('2d')}>2D схема</button>
       <button aria-pressed={viewMode === '3d'} onClick={() => { setSceneFailed(false); setViewMode('3d'); }}>3D сцена</button>
@@ -148,6 +163,8 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome }:
         </button>)}
       </aside>
       <div className="editor-center">
+      <ConnectionGuide titleRef={guideTitle} project={project} component={component} pending={pending} message={connectionMessage}
+        onPick={pickPort} onCancel={cancelConnection} onMount={() => mountSelect.current?.focus()} />
       {catalogOpen && <Suspense fallback={<p>Открываем встроенный каталог…</p>}><CatalogPanel project={project} selected={component} level={level}
         ctl={ctl} onPlaced={setSelected} /></Suspense>}
       {sceneFailed && <p className="editor-error" role="alert">3D недоступно. Схема и расчёт сохранены в 2D.</p>}
@@ -161,19 +178,21 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome }:
         }} />
       </div>
       <section className="work-panel" aria-label="Монтаж и свойства">
-        {room && <><h2>{room.name}</h2><RoomForm room={room} ctl={ctl} /><StartConditions room={room} project={project} ctl={ctl} /></>}
-        {component && <><PortInspector project={project} component={component} pending={pending} onPick={pickPort} />
-          <Inspector key={component.id + ':' + component.typeId} component={component} project={project} ctl={ctl} /></>}
-        {pending && <div className="pick-port"><p>Начало: {pending.portId}. Выберите второй порт.</p><button onClick={() => setPending(null)}>Отменить соединение</button></div>}
-        <h2>Монтаж</h2>
-        <form onSubmit={addComponent} className="room-fields">
-          <label>Учебное оборудование<select value={typeId} onChange={(e) => setTypeId(e.target.value)}>
+        <h2>Монтаж оборудования</h2>
+        <form onSubmit={addComponent} className="room-fields mount-fields">
+          <label>Учебное оборудование<select ref={mountSelect} value={typeId} onChange={(e) => setTypeId(e.target.value)}>
             {[...equipmentRegistry.values()].map((d) => <option key={d.id} value={d.id}>{d.titleRu}</option>)}
           </select></label>
-          <label>X, м<input name="x" inputMode="decimal" defaultValue="1" /></label>
-          <label>Z, м<input name="z" inputMode="decimal" defaultValue="1" /></label>
+          <div className="mount-coordinates" key={level + ':' + placementKey}>
+            <label>X, м<input name="x" inputMode="decimal" defaultValue={String(nextPosition.x).replace('.', ',')} /></label>
+            <label>Z, м<input name="z" inputMode="decimal" defaultValue={String(nextPosition.z).replace('.', ',')} /></label>
+          </div>
           <button type="submit" disabled={project.components.length >= 220}>Установить</button>
+          {component && <button type="button" onClick={() => guideTitle.current?.focus()}>К соединениям</button>}
         </form>
+        {room && <><h2>{room.name}</h2><RoomForm room={room} ctl={ctl} /><StartConditions room={room} project={project} ctl={ctl} /></>}
+        {component && <><PortInspector project={project} component={component} pending={pending} onPick={(portId) => pickPort({ componentId: component.id, portId })} />
+          <Inspector key={component.id + ':' + component.typeId} component={component} project={project} ctl={ctl} /></>}
         <RouteTools key={level} level={level} project={project} ctl={ctl} onOverlay={(next) => setOverlay({ ...next, revision: project.revision })} />
         <h2>Связи этажа</h2>
         {!links.length && <p>Нет связей</p>}
