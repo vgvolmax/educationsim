@@ -26,6 +26,9 @@ export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, proj
   const camera = new T.PerspectiveCamera(43, 1, .04, 900);
   const controls = new OrbitControls(camera, canvas);
   const keys = bindCameraKeys(canvas);
+  // Keyboard-pan diagnostics measure applied motion, independent of adaptive WebGL raster resolution.
+  let keyboardPans = 0;
+  canvas.dataset.keyboardPans = '0';
   controls.enableDamping = true; controls.dampingFactor = .12; controls.minDistance = .4; controls.maxDistance = 400;
   controls.maxPolarAngle = Math.PI * .48;
   const grid = new T.GridHelper(20, 40, 0xb5b6a2, 0xdad8cb); grid.position.y = data.floorY - .125; scene.add(grid);
@@ -154,6 +157,7 @@ export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, proj
       const step = cameraTravel(movement, heading, camera.position.distanceTo(controls.target), frameMs / 1000);
       camera.position.x += step.x; camera.position.z += step.z;
       controls.target.x += step.x; controls.target.z += step.z;
+      if (step.x || step.z) canvas.dataset.keyboardPans = String(++keyboardPans);
     }
     controls.update(); renderer.render(scene, camera);
     frameId = requestAnimationFrame(animate);
