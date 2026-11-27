@@ -4,7 +4,7 @@ const paint = { copper: 0xb16b46, body: 0x315a5b, dark: 0x253b3f, brass: 0xc2965
 const mat = (color: number) => new T.MeshStandardMaterial({ color, roughness: .67, metalness: .16 });
 const cube = (x: number, y: number, z: number, color: number) => new T.Mesh(new T.BoxGeometry(x, y, z), mat(color));
 const cyl = (r: number, length: number, color: number) => new T.Mesh(new T.CylinderGeometry(r, r, length, 14), mat(color));
-type Equipment = { id: string; position: { x: number; y: number; z: number }; family: string; variant: string };
+type Equipment = { id: string; position: { x: number; y: number; z: number }; family: string; variant: string; outlets?: number };
 
 export function createEquipment(equipment: Equipment) {
   const { family, variant } = equipment;
@@ -18,9 +18,11 @@ export function createEquipment(equipment: Equipment) {
     add(cube(.48, .56, .26, paint.light), 0, .34); face();
     add(cyl(.042, .15, paint.copper), -.15, .07); add(cyl(.042, .15, paint.steel), .15, .07);
   } else if (family === 'manifolds') {
-    for (const side of [-1, 1]) {
-      add(cyl(.05, .47, side === 1 ? paint.copper : paint.steel), 0, .17, side * .098, Math.PI / 2);
-      for (const x of [-.15, -.045, .06, .165]) add(cyl(.023, .13, paint.brass), x, .1, side * .098);
+    const outlets = Math.max(1, Math.min(12, equipment.outlets || 1));
+    const sides = variant === 'supply-manifold' ? [1] : variant === 'return-manifold' ? [-1] : [-1, 1];
+    for (const side of sides) {
+      add(cyl(.05, .14 + outlets * .105, side === 1 ? paint.copper : paint.steel), 0, .17, side * .098, Math.PI / 2);
+      for (let i = 0; i < outlets; i++) add(cyl(.023, .13, paint.brass), (i - (outlets - 1) / 2) * .105, .1, side * .098);
     }
   } else if (family === 'circulation' || family === 'mixing') {
     pipe(.06, .56);

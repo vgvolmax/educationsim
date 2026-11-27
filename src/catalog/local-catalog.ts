@@ -61,3 +61,40 @@ export async function activateLocalCatalog(factory: IDBFactory, packageInput: Ca
     });
   } finally { db.close(); }
 }
+
+export async function listLocalCatalogs(factory: IDBFactory): Promise<string[]> {
+  const db = await openDatabase(factory);
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(store, 'readonly');
+      const req = tx.objectStore(store).getAllKeys();
+      tx.oncomplete = () => resolve(req.result.filter((key): key is string => typeof key === 'string'));
+      tx.onabort = () => reject(tx.error ?? new Error('Не удалось прочитать архив выпусков.'));
+    });
+  } finally { db.close(); }
+}
+
+export async function selectCatalogRelease(factory: IDBFactory, id: string | null): Promise<CatalogPackage | null> {
+  const db = await openDatabase(factory);
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction([store, meta], 'readwrite');
+      const state = tx.objectStore(meta);
+      let selected: CatalogPackage | null = null, incompatible = false;
+      if (id === null) state.delete('active');
+      else {
+        const req = tx.objectStore(store).get(id);
+        req.onsuccess = () => {
+          const parsed = validateCatalog(req.result);
+          if (!parsed.ok || parsed.value.releaseId !== id) { incompatible = true; tx.abort(); return; }
+          selected = parsed.value;
+          state.put(id, 'active');
+        };
+      }
+      tx.oncomplete = () => resolve(selected);
+      tx.onabort = () => reject(new Error(incompatible ?
+        'Сохранённый выпуск отсутствует или несовместим. Активный каталог не изменён.' :
+        'Не удалось переключить выпуск. Активный каталог не изменён.'));
+    });
+  } finally { db.close(); }
+}

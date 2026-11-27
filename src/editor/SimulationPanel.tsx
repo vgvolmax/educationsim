@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { compileLiveScenario } from '../project/live-scenario';
+import { parseRussianDecimal } from '../project/units';
 import type { TemplateId } from '../project/templates';
 import type { ProjectDocument } from '../project/types';
 import { captureFrame } from '../simulation/comparison';
@@ -19,6 +20,26 @@ type Run = { client: Client; scenario: SimulationScenario; id: string };
 const modes: Record<Client['state']['mode'], string> = {
   idle: 'Не подготовлен', loading: 'Подготавливается', paused: 'На паузе', running: 'Выполняется', stopped: 'Остановлен', stalled: 'Связь с расчётом потеряна',
 };
+
+function ValvePosition({ accepted, enabled, onChange }: {
+  accepted: number | null; enabled: boolean; onChange(value: number): void;
+}) {
+  const [invalid, setInvalid] = useState(false);
+  return <form className="simulation-actions" onSubmit={(event) => {
+    event.preventDefault();
+    const requested = parseRussianDecimal(String(new FormData(event.currentTarget).get('opening')));
+    if (!enabled || requested === null || requested < 0 || requested > 100) { setInvalid(true); return; }
+    setInvalid(false);
+    onChange(requested / 100);
+  }}>
+    <label>Задать открытие, % <input name="opening" inputMode="decimal" disabled={!enabled}
+      defaultValue={accepted === null ? '' : String(accepted * 100).replace('.', ',')}
+      aria-invalid={invalid || undefined} /></label>
+    <button disabled={!enabled}>Применить открытие</button>
+    <output>{accepted === null ? 'Фактическое открытие: нет данных' : 'Фактическое открытие: ' + numberRu(accepted * 100, 1) + ' %'}</output>
+    {invalid && <p className="editor-error" role="alert">Введите открытие от 0 до 100 %.</p>}
+  </form>;
+}
 
 export function SimulationPanel({ project, preset, artifacts, onArtifacts, onFocus, onLive }: {
   project: ProjectDocument; preset?: TemplateId; artifacts: ProjectArtifacts; onArtifacts: Dispatch<SetStateAction<ProjectArtifacts>>; onFocus(id: string): void; onLive?(live: SceneLive | null): void;
@@ -148,6 +169,10 @@ export function SimulationPanel({ project, preset, artifacts, onArtifacts, onFoc
         </button>}
         {limiter && <button disabled={!available} onClick={() => command({ kind: 'reset-limit', limiterId: limiter.id })}>Сбросить защиту</button>}
       </div>
+      {aperture && 'opening' in aperture && selected && ['balance', 'two-way'].includes(aperture.kind) &&
+        <ValvePosition key={current.id + ':' + selected.id} enabled={available}
+          accepted={!frame || frame.stale || frame.mode === 'stopped' ? null : frame.snapshot.valveOpenings[selected.id] ?? aperture.opening}
+          onChange={(opening) => command({ kind: 'set-valve', channelId: selected.id, opening })} />}
       <p className="run-hint">Управляющая команда действует со следующего модельного тика.</p>
       {frame && <><RunReadings frame={frame} scenario={current.scenario} onFocus={onFocus} /><RunHistory frame={frame} key={current.id} /></>}
     </div>}

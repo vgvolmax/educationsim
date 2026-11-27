@@ -40,7 +40,33 @@ test('L15 rejects a working but redundant purchase and checks the offered explan
   await press(page, 'Рассчитать один тик');
   for (const label of ['Добавить один комплект Эко 4', 'Добавить отдельную трубу', 'Добавить ещё один насос', 'Четыре петли, хотя комнат три',
     'По карточке восемь евроконусов; подтвердить расхождение', 'Сверить 130/180 мм, присоединения и рабочую точку']) await press(page, label);
+  await expect(page.getByText('Ровно нужные позиции, без лишних', { exact: false })).toHaveCount(0);
+  await press(page, 'Завершить попытку');
   await expect(page.getByText('Урок пройден.', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Ровно нужные позиции, без лишних', { exact: false })).toBeVisible();
   await press(page, 'Убрать лишний насос');
+  await expect(page.getByText('Ровно нужные позиции, без лишних', { exact: false })).toHaveCount(0);
+  await press(page, 'Завершить попытку');
+  await done(page);
+});
+
+test('archived L15 remains teachable after its source SKU is absent from the active catalog', async ({ page }) => {
+  await page.goto('/');
+  await press(page, 'Прямое подключение: две петли');
+  await press(page, 'Каталог ВОЛМАКС');
+  await page.getByLabel('Файл обновления каталога').setInputFiles({
+    name: 'replacement-references.json', mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ version: 1, releaseId: 'without-eco4', publishedOn: '2026-11-26', offers: [], products: [], kits: [] })),
+  });
+  await press(page, 'Активировать выпуск');
+  await expect(page.getByText('Версия: without-eco4')).toBeVisible();
+  await press(page, '← Старт');
+  await page.getByRole('button', { name: /^L15 ·/ }).click();
+  await expect(page.getByRole('link', { name: /17052-04eco/ })).toBeVisible();
+  await press(page, 'Рассчитать один тик');
+  await expect(page.getByText('Модельный тик: 1')).toBeVisible();
+  for (const label of ['Добавить один комплект Эко 4', 'Добавить отдельную трубу', 'Четыре петли, хотя комнат три',
+    'По карточке восемь евроконусов; подтвердить расхождение', 'Сверить 130/180 мм, присоединения и рабочую точку']) await press(page, label);
+  await press(page, 'Завершить попытку');
   await done(page);
 });
