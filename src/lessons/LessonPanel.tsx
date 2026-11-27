@@ -2,16 +2,36 @@ import { useEffect, useRef, useState } from 'react';
 import { Schematic } from '../views/schematic/Schematic';
 import { editorId } from '../editor/useProject';
 import { createSimulationClient } from '../worker/client';
-import type { PreparedLesson } from './authoring';
+import type { LessonAction, LessonCase, LessonCriterion, LessonMetric, PreparedLesson } from './authoring';
 import { admittedAction, applyLessonAction, freeCopy, gradeLesson, startLessonState } from './lesson';
 import type { LessonState } from './lesson';
 import type { SessionView } from '../simulation/session';
 import type { SimulationRecord } from '../simulation/replay';
+import { equipmentRegistry } from '../project/registry';
 import type { WorkspaceDesktop } from '../storage/desktop-api';
 import './lesson.css';
 
 type Client = ReturnType<typeof createSimulationClient>;
 type Props = { lesson: PreparedLesson; onBack(): void; onEditor(seed: NonNullable<ReturnType<typeof freeCopy>>): void };
+
+const measurementNames: Record<LessonMetric, string> = {
+  flow: 'Расход', pressure: 'Давление', opening: 'Открытие', power: 'Мощность',
+  roomTemperature: 'Температура воздуха', waterTemperature: 'Температура воды', surfaceTemperature: 'Температура поверхности',
+};
+
+function measurementLabel(rule: Extract<LessonCriterion, { type: 'range' }>, selectedCase: LessonCase) {
+  const project = selectedCase.project;
+  const link = project.hydronicLinks.find(({ id }) => rule.target === 'link:' + id);
+  const branch = link && project.loopRoutes.find(({ linkId }) => linkId === link.id);
+  const loop = branch && /^(?:supply|return)-(\d+)$/.exec(link.from.portId);
+  if (loop) return measurementNames[rule.metric] + ' · Петля ' + loop[1];
+  const component = project.components.find(({ id }) => rule.target === id);
+  const room = project.rooms.find(({ id }) => rule.target === id);
+  const destination = link && project.components.find(({ id }) => id === link.to.componentId);
+  const equipment = component ?? destination;
+  const target = room?.name ?? (equipment && equipmentRegistry.get(equipment.typeId)?.titleRu) ?? rule.target;
+  return measurementNames[rule.metric] + ' · ' + target;
+}
 
 export function LessonPanel({ lesson, onBack, onEditor }: Props) {
   const [state, setState] = useState<LessonState>(() => startLessonState(lesson));
@@ -31,6 +51,12 @@ export function LessonPanel({ lesson, onBack, onEditor }: Props) {
   const grade = gradeLesson(lesson, state, views);
   const assessed = lesson.definition.feedback === 'on-submit';
   const showRubric = !assessed || submitted || review;
+  const actions = lesson.definition.actions.filter((a) => !a.forCase || a.forCase === state.caseId);
+  const primaryAction = actions.find((a) => a.type === 'step');
+  const heading = useRef<HTMLHeadingElement>(null);
+  const renderAction = (action: LessonAction) => <button key={action.id} onClick={() => perform(action.id)}
+    disabled={(action.type === 'step' || action.type === 'command') && clients.current.get(state.caseId)?.state.mode !== 'paused'}
+    aria-pressed={action.type === 'answer' ? state.answers[action.field] === action.value : undefined}>{action.label}</button>;
   function displayReading(rule: typeof lesson.definition.criteria[number] | undefined, value: number | null | undefined) {
     if (value === null) return ' · Нет данных';
     if (value === undefined) return '';
@@ -115,20 +141,21 @@ export function LessonPanel({ lesson, onBack, onEditor }: Props) {
   return <main className="lesson-bench">
     <header>
       <button onClick={onBack}>← Старт</button>
-      <div><p className="eyebrow">Урок {lesson.definition.id} · {lesson.definition.minutes} мин</p><h1>{lesson.definition.title}</h1></div>
+      <div><p className="eyebrow">Урок {lesson.definition.id} · {lesson.definition.minutes} мин</p><h1 ref={heading} tabIndex={-1}>{lesson.definition.title}</h1></div>
     </header>
     <p className="lesson-goal">{lesson.definition.goal}</p>
     {lesson.definition.sourceCard && <p>Публичный снимок комплектации · <a href={lesson.definition.sourceCard.url}
       target="_blank" rel="noreferrer">{lesson.definition.sourceCard.article} ↗</a></p>}
     <div className="lesson-grid">
       <section aria-label="Схема урока">
-        <div className="lesson-case"><strong>{bound.definition.title}</strong><span>{view ? 'Модельный тик: ' + view.snapshot.tick : 'Готовим учебную схему…'}</span></div>
+        <div className="lesson-case"><strong>{bound.definition.title}</strong><div className="lesson-primary">
+          <span>{view ? 'Модельный тик: ' + view.snapshot.tick : 'Готовим учебную схему…'}</span>
+          {primaryAction && renderAction(primaryAction)}
+        </div></div>
         <Schematic project={bound.project} level={bound.project.viewPreferences.level} selected={highlight} selectedLink={highlight}
           onSelect={inspect} onLinkSelect={inspect} water control />
         <section className="lesson-actions" aria-label="Разрешённые действия">
-          {lesson.definition.actions.filter((a) => !a.forCase || a.forCase === state.caseId).map((a) => <button key={a.id} onClick={() => perform(a.id)}
-            disabled={(a.type === 'step' || a.type === 'command') && clients.current.get(state.caseId)?.state.mode !== 'paused'}
-            aria-pressed={a.type === 'answer' ? state.answers[a.field] === a.value : undefined}>{a.label}</button>)}
+          {actions.filter((action) => action !== primaryAction).map(renderAction)}
         </section>
       </section>
       <aside className="lesson-rubric">
@@ -144,8 +171,10 @@ export function LessonPanel({ lesson, onBack, onEditor }: Props) {
           <p>Оценка появится после завершения попытки. Ниже только текущие измерения.</p>
           <ul>{grade.rows.flatMap((row) => {
             const rule = lesson.definition.criteria.find((entry) => entry.id === row.id);
-            return rule?.type === 'range' ?
-              [<li key={row.id}>{rule.caseId ? rule.caseId + ': ' : ''}{rule.target}{displayReading(rule, row.actual)}</li>] : [];
+            if (rule?.type !== 'range') return [];
+            const measured = lesson.cases.find(({ definition }) => definition.id === rule.caseId) ?? bound;
+            return [<li key={row.id}>{rule.caseId ? measured.definition.title + ': ' : ''}
+              {measurementLabel(rule, measured)}{displayReading(rule, row.actual)}</li>];
           })}</ul>
         </>}
         {Object.entries(state.basket).some(([, n]) => n > 0) && <p>Набор: {Object.entries(state.basket).filter(([, n]) => n > 0).map(([id, n]) => id + ' ×' + n).join(', ')}.</p>}
@@ -159,7 +188,11 @@ export function LessonPanel({ lesson, onBack, onEditor }: Props) {
     {(error || view?.stale || view?.mode === 'stopped') && <p role="alert" className="lesson-warning">{error ||
       view?.diagnostics.map((d) => d.message).join(' ') || 'Прогон остановлен. Сбросьте попытку.'}</p>}
     <div className="lesson-actions">
-      <button onClick={() => { setState(startLessonState(lesson)); setSessionKey((n) => n + 1); setError(''); setHint(0); setHighlight(null); }}>Начать попытку заново</button>
+      <button disabled={exporting} onClick={() => {
+        setState(startLessonState(lesson)); setSessionKey((n) => n + 1);
+        setSubmitted(false); setReview(false); setError(''); setHint(0); setHighlight(null);
+        heading.current?.focus();
+      }}>Начать попытку заново</button>
       <button onClick={() => { const seed = freeCopy(lesson, state.caseId, editorId('project')); if (seed) onEditor(seed); }}>Открыть свободную копию</button>
       <button disabled={exporting || state.actions.length === 0 || (assessed && !submitted)} onClick={() => { void report(); }}>Сохранить отчёт наставнику</button>
     </div>
