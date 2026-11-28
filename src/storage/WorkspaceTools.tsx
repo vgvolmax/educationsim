@@ -21,8 +21,14 @@ async function exportWorkspace(workspace: Workspace) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-export function WorkspaceTools({ workspace, save, onImport, onDuplicate }: {
-  workspace: Workspace | null; save: ReturnType<typeof useAutosave>; onImport(next: Workspace): Promise<boolean>; onDuplicate(): void;
+export function WorkspaceSaveStatus({ state }: { state: ReturnType<typeof useAutosave>['state'] }) {
+  const status = state.error ? 'error' : state.saving || state.dirty || !state.hasSaved ? 'pending' : 'ready';
+  return <p className="save-state" role="status" data-save={status}>{state.error ? 'Не удалось сохранить.' :
+    state.saving ? 'Сохраняем локально…' : status === 'pending' ? 'Есть несохранённые изменения.' : 'Проект сохранён локально.'}</p>;
+}
+
+export function WorkspaceTools({ workspace, save, onImport, onDuplicate, showSaveStatus = true }: {
+  workspace: Workspace | null; save: ReturnType<typeof useAutosave>; onImport(next: Workspace): Promise<boolean>; onDuplicate(): void; showSaveStatus?: boolean;
 }) {
   const [candidate, setCandidate] = useState<Workspace | null>(null);
   const [message, setMessage] = useState('');
@@ -55,7 +61,7 @@ export function WorkspaceTools({ workspace, save, onImport, onDuplicate }: {
       <FilePicker label="Импорт проекта JSON" accept=".json,application/json" onChoose={(file) => { void preview(file); }} />
       {workspace && <button onClick={() => { void download(); }}>Экспорт проекта и прогонов</button>}
       {workspace && <button onClick={onDuplicate}>Создать копию проекта</button>}
-      {workspace && <p className="save-state" data-save={save.state.error ? 'error' : save.state.saving || save.state.dirty || !save.state.hasSaved ? 'pending' : 'ready'}>{save.state.error ? 'Не удалось сохранить.' : save.state.saving ? 'Сохраняем локально…' : save.state.dirty || !save.state.hasSaved ? 'Есть несохранённые изменения.' : 'Проект сохранён локально.'}</p>}
+      {workspace && showSaveStatus && <WorkspaceSaveStatus state={save.state} />}
     </div>
     {reading && <p>Проверяем файл…</p>}
     {error && <div className="workspace-warning" role="alert"><strong>Импорт не выполнен.</strong> {error}</div>}

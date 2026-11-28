@@ -83,7 +83,7 @@ export function CatalogPanel({ project, selected, level, ctl, onPlaced }: Props)
             <p>{offer.review.evidence}</p><p>Что проверить: {offer.review.next}</p></>}
           {profile && <p>Профиль из файла: {profile.modelId}. Напор {profile.ratings.headPa} Па; расход {profile.ratings.flowM3s} м³/с.
             Эти сведения не подтверждают допуск к продаже в приложении.</p>}
-          {offer.url.startsWith('https://volmax.ru/catalog/') && <a href={offer.url} target="_blank" rel="noreferrer">Исходная карточка ↗</a>}
+          {offer.url.startsWith('https://volmax.ru/catalog/') && <a href={offer.url} target="_blank" rel="noreferrer">Исходная карточка на volmax.ru</a>}
           {offer.review?.sources.slice(1).map((s) => <p className="catalog-reference" key={s}>Ссылка на источник: {s}</p>)}
           {kit && <KitDetails kit={kit} project={project} onSelect={setSelection} />}
           {catalog.source === 'embedded' ? <CompatibilityPreview key={selection + ':' + current.releaseId + ':' + context + ':' + (selected?.id ?? '')} offer={offer}
@@ -92,7 +92,7 @@ export function CatalogPanel({ project, selected, level, ctl, onPlaced }: Props)
         </>}
       </article>
     </div>
-    <details className="editor-section" open><summary>Локальное обновление</summary>
+    <details className="editor-section"><summary>Локальное обновление</summary>
       <div className="catalog-tools">
         <label>Имя выпуска для CSV<input value={csvId} onChange={(e) => setCsvId(e.target.value)} placeholder="local-2026-11" /></label>
         <FilePicker label="Файл обновления каталога" accept=".json,.csv" disabled={catalog.writing}

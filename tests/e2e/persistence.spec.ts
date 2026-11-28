@@ -16,11 +16,12 @@ test('export_import_preserves_two_revisions_and_run_results without overwriting 
   await page.goto('/');
   await page.getByRole('button', { name: 'Прямое подключение: две петли' }).click();
   await page.getByRole('button', { name: 'Подготовить прогон' }).click();
-  await page.getByRole('button', { name: 'Один шаг' }).click();
+  await page.getByRole('button', { name: 'Один шаг расчёта' }).click();
   await page.getByRole('button', { name: 'Зафиксировать А' }).click();
   await page.getByRole('button', { name: 'Зафиксировать Б' }).click();
   await page.getByRole('button', { name: 'Сохранить запись прогона' }).click();
   await expect(page.getByText('Сохранённых записей: 1')).toBeVisible();
+  await page.getByRole('button', { name: 'Файлы и имя проекта' }).click();
   const recorded = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Экспорт проекта и прогонов' }).click();
   const file = await recorded;

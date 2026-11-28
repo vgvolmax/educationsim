@@ -5,7 +5,7 @@ test('a real lesson uses the Worker, restricts actions and can create an unlocke
   await page.getByRole('button', { name: /L01 · Подача, петля и обратка/ }).click();
   await expect(page.getByRole('heading', { name: 'Подача, петля и обратка' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Добавить комнату' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Рассчитать один тик', exact: true }).click();
+  await page.getByRole('button', { name: 'Один шаг расчёта', exact: true }).click();
   await expect(page.getByText('Модельный тик: 1')).toBeVisible();
   await page.getByRole('button', { name: 'Найти подачу' }).click();
   await expect(page.locator('[data-link="supply"]')).toHaveClass(/lesson-identified/);

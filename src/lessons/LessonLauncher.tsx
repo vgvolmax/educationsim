@@ -2,11 +2,13 @@ import { FilePicker } from '../ui/FilePicker';
 import { useState } from 'react';
 import { prepareLesson } from './authoring';
 import type { PreparedLesson } from './authoring';
-import { firstLesson } from './first-lesson';
+import { lessonKey } from './progress';
 import { lessonLibrary } from './lesson-library';
 import './lesson.css';
 
-export function LessonLauncher({ launch }: { launch(lesson: PreparedLesson, introductory?: boolean): void }) {
+export function LessonLauncher({ launch, passed, progressError }: {
+  launch(lesson: PreparedLesson, bundled?: boolean): void; passed: ReadonlySet<string>; progressError: string;
+}) {
   const [draft, setDraft] = useState<PreparedLesson | null>(null);
   const [error, setError] = useState('');
   async function inspect(file: File | undefined) {
@@ -22,14 +24,22 @@ export function LessonLauncher({ launch }: { launch(lesson: PreparedLesson, intr
   }
   function useBundled(raw: typeof lessonLibrary[number]) {
     const result = prepareLesson(raw);
-    if (result.ok) { setError(''); launch(result.value, raw.id === firstLesson.id); }
+    if (result.ok) { setError(''); launch(result.value, true); }
     else setError(result.diagnostics.map((item) => item.message).join(' '));
   }
-  return <section id="lessons" aria-label="Учебные задания" className="template-section lesson-library">
-    <div className="home-section-heading"><div><p className="eyebrow">Практика</p><h2>Учебные задания</h2></div>
-      <p>Проходите задания в своём темпе и проверяйте выводы в расчёте.</p></div>
-    <div className="template-list">{lessonLibrary.map((lesson) => <button key={lesson.id} onClick={() => useBundled(lesson)}>
-      {lesson.id} · {lesson.title} · {lesson.minutes} мин</button>)}</div>
+  return <section id="lessons" tabIndex={-1} aria-label="Учебные задания" className="template-section lesson-library">
+    <div className="home-section-heading"><h2>Учебные задания</h2>
+      <p>{lessonLibrary.filter((lesson) => passed.has(lessonKey(lesson))).length} из {lessonLibrary.length} пройдено</p></div>
+    {progressError && <p role="alert" className="lesson-warning">{progressError}</p>}
+    {[{ title: 'Практика', assessed: false }, { title: 'Клиентские кейсы', assessed: true }].map((group) =>
+      <section className="lesson-library-group" key={group.title} aria-label={group.title}>
+        <h3>{group.title}</h3>
+        <div className="template-list">{lessonLibrary.filter((lesson) => (lesson.feedback === 'on-submit') === group.assessed)
+          .map((lesson) => <button key={lesson.id} onClick={() => useBundled(lesson)}>
+            <strong>{lesson.id} · {lesson.title}</strong>
+            <span>{lesson.minutes} мин {passed.has(lessonKey(lesson)) && <b>· Пройдено</b>}</span>
+          </button>)}</div>
+      </section>)}
     <details className="lesson-author"><summary>Предпросмотр авторского урока</summary>
       <p>Файл проверяется и открывается локально как отдельная попытка. Он не заменяет встроенный урок.</p>
       <FilePicker label="Файл урока JSON" accept=".json,application/json" onChoose={(file) => { void inspect(file); }} />

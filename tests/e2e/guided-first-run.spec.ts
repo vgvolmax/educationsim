@@ -12,7 +12,7 @@ test('a newcomer opens the first experiment from the home screen and sees real f
   const guide = page.getByRole('region', { name: 'Следующий шаг' });
   await expect(guide).toContainText('1 из 3');
   await expect(guide).toContainText('Расход ещё не измерен');
-  await page.getByRole('button', { name: 'Рассчитать один тик', exact: true }).click();
+  await page.getByRole('button', { name: 'Один шаг расчёта', exact: true }).click();
   await expect(guide).toContainText('2 из 3');
   await expect(guide).toContainText(/Расход в петле 1: [1-9]\d*,\d{2} л\/мин/);
   await page.getByRole('button', { name: 'Найти подачу', exact: true }).click();
@@ -24,14 +24,16 @@ test('a newcomer opens the first experiment from the home screen and sees real f
   await page.getByRole('button', { name: 'Начать попытку заново' }).click();
   await expect(guide).toContainText('1 из 3');
   await expect(guide).toContainText('Расход ещё не измерен');
+  await page.reload();
+  await expect(page.getByRole('button', { name: /L01 ·.*Пройдено/ })).toBeVisible();
 });
 
 test('the same guide is available from the lesson library without revealing the assessed rubric', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: /^L01 ·/ }).click();
   await expect(page.getByRole('region', { name: 'Следующий шаг' })).toBeVisible();
-  await page.getByRole('button', { name: '← Старт' }).click();
+  await page.getByRole('button', { name: '← К заданиям' }).click();
   await page.getByRole('button', { name: /^L15 ·/ }).click();
   await expect(page.getByRole('region', { name: 'Следующий шаг' })).toHaveCount(0);
-  await expect(page.getByText('Оценка появится после завершения попытки.', { exact: false })).toBeVisible();
+  await expect(page.getByText('После сдачи откроются оценка и разбор.')).toBeVisible();
 });

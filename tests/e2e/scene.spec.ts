@@ -25,16 +25,16 @@ test('a cutaway valve uses the running system and the same meter as 2D', async (
   await page.goto('/');
   await page.getByRole('button', { name: 'Прямое подключение: две петли' }).click();
   await page.getByRole('button', { name: 'Подготовить прогон' }).click();
-  await page.getByRole('button', { name: 'Один шаг' }).click();
+  await page.getByRole('button', { name: 'Один шаг расчёта' }).click();
   await expect(page.getByText('Модельный тик: 1')).toBeVisible();
   await page.getByRole('button', { name: 'Пара коллекторов с расходомерами · manifold' }).click();
   await page.getByRole('button', { name: '3D сцена' }).click();
   await expect(page.locator('canvas[data-scene]')).toBeVisible();
   await page.getByRole('button', { name: 'Как работает' }).click();
   await expect(page.getByRole('img', { name: 'Принципиальные внутренние пути' })).toBeVisible();
-  const section = page.locator('.cutaway-path').filter({ hasText: 'supply-1' });
+  const section = page.locator('.cutaway-path').filter({ hasText: 'Подача петли 1' });
   await section.getByRole('button', { name: 'Закрыть этот клапан' }).click();
-  await page.getByRole('button', { name: 'Один шаг' }).click();
+  await page.getByRole('button', { name: 'Один шаг расчёта' }).click();
   await expect(section.getByText('Открытие 0 %')).toBeVisible();
   await page.getByRole('button', { name: '2D схема' }).click();
   await expect(page.locator('[data-meter="link:pipe-a"]')).toHaveText('0,00 л/мин');
@@ -73,6 +73,7 @@ test('canvas supports WASD and arrows without taking keys from a form', async ({
 
   await page.keyboard.down('ArrowDown');
   await frames();
+  await page.getByRole('button', { name: 'Монтаж и свойства' }).click();
   const field = page.getByLabel('X, м', { exact: true });
   await field.focus();
   await expect(field).toBeFocused();

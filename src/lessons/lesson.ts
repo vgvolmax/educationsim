@@ -22,6 +22,10 @@ export function applyLessonAction(state: LessonState, action: LessonAction): Les
     [action.item]: Math.max(0, Math.min(100, (state.basket[action.item] ?? 0) + action.delta)) } };
   return next;
 }
+export function stepTicks(action: Extract<LessonAction, { type: 'step' }>, currentTick: number): number {
+  return action.untilTick === undefined ? action.ticks ?? 1 : Math.max(0, action.untilTick - currentTick);
+}
+
 export function observe(view: SessionView | undefined, metric: LessonMetric, target: string): number | null {
   if (!view || view.stale || view.snapshot.health === 'stopped' || view.mode === 'stopped' || view.snapshot.tick < 1) return null;
   const s = view.snapshot;
@@ -90,7 +94,11 @@ export function createLessonAttempt(lesson: PreparedLesson) {
       const action = admittedAction(lesson, state, actionId);
       const session = sessions.get(state.caseId);
       if (!action || !session) return false;
-      if (action.type === 'step') for (let tick = 0; tick < (action.ticks ?? 1); tick++) session.stepOnce();
+      if (action.type === 'step') {
+        const ticks = stepTicks(action, session.view.snapshot.tick);
+        if (!ticks) return false;
+        for (let tick = 0; tick < ticks; tick++) session.stepOnce();
+      }
       if (action.type === 'command') {
         if (!session.command(action.command)) return false;
         session.stepOnce();
