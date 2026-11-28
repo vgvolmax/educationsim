@@ -12,6 +12,9 @@ import { portLabel } from './portLabel';
 import { PortInspector } from './PortInspector';
 import { RouteTools } from './RouteTools';
 import type { RouteOverlay } from './RouteTools';
+import { routeCursor } from './route-drawing';
+import type { RouteDrawing } from './route-drawing';
+import { projectLimits } from '../project/limits';
 import type { SceneLive } from '../views/scene/Scene';
 import { Schematic } from '../views/schematic/Schematic';
 import { editorId } from './useProject';
@@ -69,6 +72,9 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
   const [placementKey, setPlacementKey] = useState(0);
   const mountSelect = useRef<HTMLSelectElement>(null);
   const guideTitle = useRef<HTMLHeadingElement>(null);
+  const floorTool = useRef<HTMLDetailsElement>(null);
+  const [routeDrawing, setRouteDrawing] = useState<RouteDrawing | null>(null);
+  const drawing = routeDrawing?.revision === project.revision && routeDrawing.room.level === level ? routeDrawing : null;
   const [overlay, setOverlay] = useState<RouteOverlay & { revision?: number }>({});
   const [typeId, setTypeId] = useState('training-heat-source');
   const [water, setWater] = useState(true), [control, setControl] = useState(true);
@@ -103,6 +109,7 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
   const routed = Boolean(component && hasAuthoredTraces(project, component.id));
 
   function pickPart(part: Placement) {
+    closeFloorTool();
     cancelConnection();
     setCatalogOpen(false);
     setPartsOpen(false);
@@ -147,9 +154,36 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
     }
   }
 
+  function stopDrawing() {
+    setRouteDrawing(null);
+    setOverlay({});
+  }
+  function closeFloorTool() {
+    if (floorTool.current) floorTool.current.open = false;
+    stopDrawing();
+  }
+  function previewOnPlan() {
+    cancelConnection();
+    setPlacement(null);
+    setPlacementMessage('');
+    setViewMode('2d');
+    setWater(true);
+  }
+  function tracePoint(point: Point2 | undefined, commit: boolean) {
+    setRouteDrawing((current) => {
+      if (!current || current.locked || current.revision !== project.revision) return current;
+      if (!point || (current.kind !== 'manual' && current.points.length >= 2)) return { ...current, cursor: undefined };
+      const cursor = routeCursor(current, point);
+      if (!commit || !cursor.allowed || current.points.length >= projectLimits.routePoints) return { ...current, cursor };
+      return { ...current, points: [...current.points, cursor.point], direction: cursor.direction, cursor: undefined };
+    });
+  }
   function cancelConnection() { setPending(null); setConnectionMessage(''); }
   function keyEdit(e: KeyboardEvent) {
-    if (e.key === 'Escape') { setPlacement(null); setPlacementMessage(''); cancelConnection(); return; }
+    if (e.key === 'Escape') {
+      if (drawing && !drawing.locked) stopDrawing();
+      setPlacement(null); setPlacementMessage(''); cancelConnection(); return;
+    }
     if (placement && e.code === 'KeyR' && !e.ctrlKey && !e.metaKey && !e.repeat &&
         !(e.target instanceof HTMLElement && e.target.closest('input, textarea, select'))) {
       e.preventDefault(); rotatePart(); return;
@@ -211,7 +245,7 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
       <span className="revision">Редакция {project.revision}</span>
     </header>
     <div className="work-toolbar" aria-label="Инструменты схемы">
-      <div className="toolbar-group" role="group" aria-label="План этажа"><label>Этаж <select value={level} onChange={(e) => { setLevel(Number(e.target.value)); setPlacement(null); setSelected(null); setOverlay({}); }}>
+      <div className="toolbar-group" role="group" aria-label="План этажа"><label>Этаж <select value={level} onChange={(e) => { setLevel(Number(e.target.value)); setPlacement(null); setSelected(null); stopDrawing(); }}>
         {[0, 1, 2].map((n) => <option key={n} value={n}>{n + 1}</option>)}
       </select></label>
       <button onClick={addRoom} disabled={project.rooms.length >= 12}>Добавить комнату</button></div>
@@ -221,7 +255,7 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
       <button ref={catalogTrigger} aria-expanded={catalogOpen} aria-controls={catalogOpen ? 'editor-catalog' : undefined}
         onClick={() => catalogOpen ? closeCatalog() : setCatalogOpen(true)}>Каталог ВОЛМАКС</button>
       <button aria-pressed={viewMode === '2d'} onClick={() => setViewMode('2d')}>2D схема</button>
-      <button aria-pressed={viewMode === '3d'} onClick={() => { setSceneFailed(false); setViewMode('3d'); }}>3D сцена</button></div>
+      <button aria-pressed={viewMode === '3d'} onClick={() => { closeFloorTool(); setSceneFailed(false); setViewMode('3d'); }}>3D сцена</button></div>
       {viewMode === '2d' ? <div className="toolbar-group layer-group" role="group" aria-label="Слои 2D"><label><input type="checkbox" checked={water} onChange={(e) => setWater(e.target.checked)} /> Вода</label>
       <label><input type="checkbox" checked={control} onChange={(e) => setControl(e.target.checked)} /> Управление</label></div> :
         <button aria-pressed={sceneInspector} onClick={() => setSceneInspector((open) => !open)}>Монтаж и свойства</button>}
@@ -277,9 +311,9 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
         <SimulationPanel project={project} preset={preset} artifacts={artifacts} onArtifacts={onArtifacts}
           onLive={viewMode === '3d' ? setLiveScene : undefined} onFocus={(id) => {
             const focus = project.components.find((c) => c.id === id);
-            if (focus) { setLevel(focus.level); setSelected(id); setOverlay({}); }
+            if (focus) { setLevel(focus.level); setSelected(id); stopDrawing(); }
           }}>
-          {viewMode === '2d' && (component || pending || !links.length || showConnections ?
+          {viewMode === '2d' && !drawing && (component || pending || !links.length || showConnections ?
             <ConnectionGuide titleRef={guideTitle} project={project} component={component} pending={pending} message={connectionMessage}
               onPick={pickPort} onCancel={cancelConnection} onMount={() => mountSelect.current?.focus()} /> :
             <div className="connection-compact"><button onClick={() => setShowConnections(true)}>Соединить элементы</button></div>)}
@@ -302,9 +336,13 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
           </section>}
           {placementMessage && <p className="placement-status" role="status">{placementMessage}</p>}
           {sceneFailed && <p className="editor-error" role="alert">3D недоступно. Схема и расчёт сохранены в 2D.</p>}
+          <RouteTools key={level} level={level} project={project} ctl={ctl} selectedRoom={room?.id}
+            drawing={drawing} tool={floorTool} onDrawing={setRouteDrawing} onPlan={previewOnPlan}
+            onOverlay={(next) => setOverlay({ ...next, revision: project.revision })} />
           {viewMode === '3d' ? <Suspense fallback={<p>Загружаем 3D…</p>}><Scene project={project} level={level} selected={selected}
             live={liveScene} placement={placement} onPlace={place} onDrag={moveRequest} onSelect={setSelected} onUnavailable={() => { setSceneFailed(true); setViewMode('2d'); }} /></Suspense> :
             <Schematic project={project} level={level} selected={selected} onSelect={setSelected} onPlace={placement ? place : undefined} water={water} control={control}
+              drawing={drawing ?? undefined} onTracePoint={drawing ? tracePoint : undefined}
               overlay={overlay.revision === project.revision ? overlay : undefined} />}
         </SimulationPanel>
       </div>
@@ -324,7 +362,6 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
         {room && <><h2>{room.name}</h2><RoomForm room={room} ctl={ctl} /><StartConditions room={room} project={project} ctl={ctl} /></>}
         {component && <><PortInspector project={project} component={component} pending={pending} onPick={(portId) => pickPort({ componentId: component.id, portId })} />
           <Inspector key={component.id + ':' + component.typeId} component={component} project={project} ctl={ctl} /></>}
-        <RouteTools key={level} level={level} project={project} ctl={ctl} onOverlay={(next) => setOverlay({ ...next, revision: project.revision })} />
         <h2>Связи этажа</h2>
         {!links.length && <p>Нет связей</p>}
         {links.map(({ domain, link }) => <div key={domain + link.id} className="link-row">

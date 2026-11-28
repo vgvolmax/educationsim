@@ -113,6 +113,16 @@ export function createEquipment(equipment: Equipment) {
   } else if (family === 'storage') {
     if (variant === 'plate-exchanger') {
       plates();
+    } else if (variant === 'separator-manifold') {
+      const outlets = Math.max(1, Math.min(12, equipment.outlets || 3));
+      const length = .24 + outlets * .12;
+      add(cube(length, .19, .14, paint.steel), 0, .25);
+      add(cyl(.086, .43, paint.dark), -length / 2 + .06, .27);
+      for (let i = 0; i < outlets; i++) {
+        const x = -length / 2 + .23 + i * .12;
+        add(cyl(.03, .13, paint.copper), x, .39, -.042);
+        add(cyl(.03, .13, paint.steel), x, .10, .042);
+      }
     } else {
       const buffer = variant === 'buffer';
       add(cyl(buffer ? .18 : .12, buffer ? .56 : .43, paint.steel), 0, buffer ? .29 : .23);

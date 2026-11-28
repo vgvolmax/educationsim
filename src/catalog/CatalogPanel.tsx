@@ -1,11 +1,11 @@
 import { FilePicker } from '../ui/FilePicker';
 import { lazy, Suspense, useMemo, useState } from 'react';
-import type { CatalogContext, CatalogKit, CatalogOffer } from './catalog';
+import type { CatalogContext, CatalogKit, CatalogOffer, CatalogPackage } from './catalog';
 import { offerKey, teachingAnalogue } from './catalog';
 import { CompatibilityPreview } from './CompatibilityPreview';
 import { useCatalog } from './useCatalog';
 import type { Placement } from '../editor/placement';
-import { equipmentRegistry } from '../project/registry';
+import { catalogVisual } from './model-preview';
 import type { ProjectController } from '../editor/useProject';
 import type { ComponentInstance, ProjectDocument } from '../project/types';
 import './catalog.css';
@@ -41,6 +41,32 @@ function KitDetails({ kit, project, onSelect }: { kit: CatalogKit; project: Proj
     <p>Трубу и материалы пола проверяйте отдельно: в опубликованном наборе они не перечислены.</p>
   </section>;
 }
+function OfferModel({ offer, kit, offers, onSelect }: {
+  offer: CatalogOffer; kit?: CatalogKit; offers: CatalogPackage['offers']; onSelect(key: string): void;
+}) {
+  const [partKey, setPartKey] = useState('');
+  const parts = kit?.parts.flatMap((part) => {
+    const key = offerKey(part.channel, part.offerId);
+    const card = offers.find((item) => offerKey(item.channel, item.offerId) === key);
+    const model = part.included && card && catalogVisual(card);
+    return model ? [{ key, part, model }] : [];
+  }) ?? [];
+  const part = parts.find(({ key }) => key === partKey) ?? parts.find(({ model }) => model.typeId.startsWith('training-manifold-')) ?? parts[0];
+  const model = part?.model ?? catalogVisual(offer);
+  return <>
+    {part && <label className="catalog-preview-part">Деталь из комплекта
+      <select value={part.key} onChange={(event) => setPartKey(event.target.value)}>
+        {parts.map(({ key, part, model }) => <option key={key} value={key}>
+          {model.name} · {part.article || part.offerId} · {part.quantity} {part.unit}
+        </option>)}
+      </select>
+    </label>}
+    {model ? <Suspense fallback={<p>Готовим модель…</p>}>
+      <CatalogModel key={model.typeId + ':' + model.variant + ':' + model.outlets} {...model} />
+    </Suspense> : <p className="catalog-assistance">Для этой позиции пока нет учебной 3D-модели.</p>}
+    {part && <button type="button" onClick={() => onSelect(part.key)}>Открыть артикул детали</button>}
+  </>;
+}
 export function CatalogPanel({ project, selected, ctl, onPlaced, onPlace }: Props) {
   const catalog = useCatalog();
   const current = catalog.active;
@@ -58,7 +84,8 @@ export function CatalogPanel({ project, selected, ctl, onPlaced, onPlace }: Prop
   const kit = current.kits.find((k) => offerKey(k.channel, k.offerId) === selection);
   const profile = current.products.find((p) => p.id === offer?.productId);
   const analogue = offer && teachingAnalogue(offer);
-  const model = analogue && equipmentRegistry.get(analogue.typeId);
+  const visual = offer && !kit && catalogVisual(offer);
+  const generic = !analogue && visual && !visual.variant && visual.outlets === undefined ? visual : null;
   const activeContext = context === 'all' ? offer?.allowedContexts[0] ?? 'floor' : context;
   return <section className="catalog-panel" data-testid="catalog-panel" data-active-release={current.releaseId} aria-label="Каталог ВОЛМАКС">
     <h2>Каталог ВОЛМАКС</h2><p className="catalog-release"><span>Версия: {current.releaseId}</span> · {current.publishedOn} · {catalog.loading ? 'Читаем локальный профиль…' : catalog.source === 'embedded' ? 'Встроенный выпуск' : 'Локальный импорт'}</p>
@@ -85,11 +112,14 @@ export function CatalogPanel({ project, selected, ctl, onPlaced, onPlace }: Prop
         {!offer ? <p>{matches.length ? 'Выберите артикул, чтобы посмотреть модель и применение.' : 'По этому запросу в разделе ничего не найдено.'}</p> : <>
           <div className="catalog-identity"><span>{offer.article || 'Артикул не указан'}</span><span>{offer.brand || 'Марка не указана'}</span></div>
           <h3>{offer.title}</h3>
-          {model ? <Suspense fallback={<p>Готовим модель…</p>}>
-            <CatalogModel key={model.id} typeId={model.id} name={model.titleRu} />
-          </Suspense> : <p className="catalog-assistance">Для этой позиции пока нет учебной 3D-модели.</p>}
-          {catalog.source === 'embedded' ? <CompatibilityPreview key={selection + ':' + current.releaseId + ':' + context + ':' + (selected?.id ?? '')}
-            offer={offer} context={activeContext} project={project} selected={selected} releaseId={current.releaseId} ctl={ctl} onPlaced={onPlaced} onPlace={onPlace} /> :
+          <OfferModel key={selection + ':' + current.releaseId} offer={offer} kit={kit} offers={current.offers} onSelect={setSelection} />
+          {catalog.source === 'embedded' ? (generic && offer.allowedContexts.includes(activeContext) ?
+            <div className="catalog-fit">
+              <button className="action-primary" type="button" disabled={project.components.length >= 220}
+                onClick={() => onPlace({ typeId: generic.typeId, quarterTurns: 0 })}>Взять типовую деталь</button>
+              <p className="catalog-assistance">В проект добавится «{generic.name}» из палитры, без привязки к артикулу.</p>
+            </div> : <CompatibilityPreview key={selection + ':' + current.releaseId + ':' + context + ':' + (selected?.id ?? '')}
+              offer={offer} context={activeContext} project={project} selected={selected} releaseId={current.releaseId} ctl={ctl} onPlaced={onPlaced} onPlace={onPlace} />) :
             <p className="catalog-assistance">Карточка локального выпуска. Для проекта выберите деталь из палитры «Детали».</p>}
           <section className="catalog-facts">
             <h4>Назначение</h4>

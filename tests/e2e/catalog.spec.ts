@@ -80,8 +80,13 @@ test('ambiguous_bundle_shows_source_and_requires_sales_confirmation', async ({ p
   await page.getByLabel('Поиск по артикулу, ID или названию').fill('17052-04eco');
   await page.getByRole('button', { name: /17052-04eco/i }).click();
   await expect(page.getByText(/Перед продажей требуется подтвердить фактический состав/)).toBeVisible();
-  await expect(page.getByText(/29352.*8 шт\./)).toBeVisible();
-  await expect(page.getByText(/39511.*2 шт\./)).toHaveCount(0);
+  const contents = page.getByRole('region', { name: 'Опубликованный состав' });
+  await expect(contents.getByText(/29352.*8 шт\./)).toBeVisible();
+  await expect(contents.getByText(/39511.*2 шт\./)).toHaveCount(0);
+  const component = page.getByLabel('Деталь из комплекта');
+  await expect(page.getByRole('img', { name: /Пара коллекторов/ })).toHaveAttribute('data-model-ready', 'training-manifold-4-way');
+  await component.selectOption('volmax:24057');
+  await expect(page.getByRole('img', { name: /Евроконус/ })).toHaveAttribute('data-model-ready', 'training-eurocone');
 });
 test('local_catalog_update_is_atomic_and_survives_restart', async ({ page }) => {
   await page.setViewportSize({ width: 1008, height: 681 });
@@ -127,4 +132,14 @@ test('changes active catalog without deleting either saved release and preserves
   await expect(page.getByText('Версия: local-reference-rollback')).toBeVisible();
   await open(page);
   await expect(page.getByText('Версия: local-reference-rollback')).toBeVisible();
+});
+
+test('a pump card shows a typical model and puts the selected type in hand for the scene', async ({ page }) => {
+  await open(page);
+  await page.getByLabel('Контекст каталога').selectOption('floor');
+  await find(page, '20701', '20701');
+  await expect(page.getByRole('img', { name: /Циркуляционный насос/ })).toHaveAttribute('data-model-ready', 'training-circulator');
+  await page.getByRole('button', { name: 'Взять типовую деталь' }).click();
+  await expect(page.getByRole('region', { name: 'Размещение детали' })).toContainText('В руке: Циркуляционный насос');
+  await expect(page.getByText('Редакция 0')).toBeVisible();
 });

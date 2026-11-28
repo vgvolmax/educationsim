@@ -3,8 +3,9 @@ import * as T from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createEquipment } from '../views/scene/createEquipment';
 import { equipmentModel } from '../views/scene/buildScene';
+import type { CatalogVisual } from './model-preview';
 
-export function CatalogModel({ typeId, name }: { typeId: string; name: string }) {
+export function CatalogModel({ typeId, name, variant, outlets }: CatalogVisual) {
   const node = useRef<HTMLCanvasElement>(null);
   const [unavailable, setUnavailable] = useState(false);
   useEffect(() => {
@@ -15,7 +16,8 @@ export function CatalogModel({ typeId, name }: { typeId: string; name: string })
     catch { setUnavailable(true); return; }
     const scene = new T.Scene();
     scene.background = new T.Color('#e9f0ef');
-    const model = createEquipment(equipmentModel(typeId, 'preview', { x: 0, y: 0, z: 0 }));
+    const base = equipmentModel(typeId, 'preview', { x: 0, y: 0, z: 0 });
+    const model = createEquipment({ ...base, variant: variant ?? base.variant, outlets: outlets ?? base.outlets });
     const box = new T.Box3().setFromObject(model), size = box.getBoundingSphere(new T.Sphere());
     model.position.sub(size.center);
     scene.add(model, new T.HemisphereLight(0xffffff, 0x62777b, 2.7));
@@ -55,10 +57,11 @@ export function CatalogModel({ typeId, name }: { typeId: string; name: string })
       renderer.dispose();
       renderer.forceContextLoss();
     };
-  }, [typeId]);
+  }, [typeId, variant, outlets]);
   return <figure className="catalog-model">
     {unavailable ? <p>3D-предпросмотр недоступен в этом окне.</p> :
       <canvas ref={node} role="img" aria-label={'Учебная 3D-модель: ' + name} />}
-    <figcaption>Учебная модель · {name}{!unavailable && <span>Поверните мышью</span>}</figcaption>
+    <figcaption><span>Типовая 3D-модель · {name}</span>
+      {!unavailable && <span>Перетащите для поворота · колесо для масштаба</span>}</figcaption>
   </figure>;
 }

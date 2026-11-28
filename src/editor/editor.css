@@ -226,3 +226,23 @@
 .drawing .plan-placement, .drawing .plan-placement * { cursor: crosshair; }
 .editor.is-placing .simulation-controls { display: none; }
 .editor.is-placing .scene-options label, .editor.is-placing .scene-inspection-option { display: none; }
+
+.floor-tool { margin: .65rem .7rem; background: #f7fbfa; }
+.floor-tool > summary > small { color: var(--muted); margin-inline-start: .45rem; font-weight: 550; }
+.floor-tool > p { margin: .65rem 0 0; }
+.floor-tool .room-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); margin-block: .65rem 0; }
+.floor-tool .room-fields label { display: grid; place-items: start stretch; gap: .3rem; }
+.floor-tool .floor-instructions, .floor-actions, .floor-coordinate-fields { grid-column: 1 / -1; }
+.floor-actions, .route-proposal { display: flex; gap: .45rem; flex-wrap: wrap; align-items: center; }
+.floor-coordinate-fields { display: grid; gap: .45rem; }
+.floor-instructions { margin: 0; padding: .55rem .7rem; background: #e1f1ed; border-radius: .5rem; }
+.floor-tool .route-proposal { margin-block-start: .65rem; padding-inline: .65rem; }
+.route-proposal p { flex-basis: 100%; margin: .2rem 0; }
+.drawing .floor-room { fill: #e9f3f0; }
+.drawing .floor-grid-line { fill: none; stroke: #2c7e71; stroke-width: .009; opacity: .52; }
+.drawing .floor-keepout { fill: #f3c6a4; fill-opacity: .6; stroke: #9a5847; stroke-width: .025; }
+.drawing .floor-existing { opacity: .23; }
+.drawing .floor-draft { fill: #0d7566; stroke: #0d7566; stroke-width: .025; }
+.drawing .floor-draft polyline { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.drawing .floor-cursor { fill: #fff; stroke: #0b6c60; stroke-dasharray: .075 .032; }
+.drawing .floor-cursor.invalid { stroke: #af3d2a; }

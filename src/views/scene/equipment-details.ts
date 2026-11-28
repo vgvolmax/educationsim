@@ -75,9 +75,16 @@ export function electronicsDetail(add: Add, variant: string) {
     add(cube(w * .47, h * .37, .026, paint.body), 0, y + h * .10, d / 2);
   };
   switch (variant) {
+    case 'radiator-head':
     case 'remote-head':
       add(cyl(.079, .155, paint.light), 0, .132); add(cyl(.08, .029, paint.body), 0, .207);
-      add(cyl(.014, .20, paint.dark), .154, .061, .08, Math.PI / 2); add(cyl(.023, .079, paint.steel), .258, .063, .08, Math.PI / 2); break;
+      if (variant === 'remote-head') {
+        add(cyl(.014, .20, paint.dark), .154, .061, .08, Math.PI / 2);
+        add(cyl(.023, .079, paint.steel), .258, .063, .08, Math.PI / 2);
+      } else {
+        add(cyl(.051, .043, paint.steel), 0, .044);
+      }
+      break;
     case 'mix-actuator': display(.186, .148, .161, .147); add(cyl(.04, .12, paint.steel), 0, .073); break;
     case 'thermal-actuator':
       add(cyl(.063, .188, paint.light), 0, .132); add(cyl(.067, .032, paint.body), 0, .045); break;
