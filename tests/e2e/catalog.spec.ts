@@ -84,6 +84,7 @@ test('ambiguous_bundle_shows_source_and_requires_sales_confirmation', async ({ p
   await expect(page.getByText(/39511.*2 шт\./)).toHaveCount(0);
 });
 test('local_catalog_update_is_atomic_and_survives_restart', async ({ page }) => {
+  await page.setViewportSize({ width: 1008, height: 681 });
   await open(page);
   const payload = { version: 1, releaseId: 'local-test', publishedOn: '2026-11-26',
     offers: [], products: [], kits: [] };
@@ -97,6 +98,8 @@ test('local_catalog_update_is_atomic_and_survives_restart', async ({ page }) => 
   await expect(page.getByText('Версия: volmax-public-20261126-v1')).toBeVisible();
   await page.getByRole('button', { name: 'Активировать выпуск' }).click();
   await expect(page.getByText('Версия: local-test')).toBeVisible();
+  await page.getByRole('button', { name: 'Добавить комнату' }).click();
+  await expect(page.locator('[data-room]')).toHaveCount(2);
   await open(page);
   await expect(page.getByText('Версия: local-test')).toBeVisible();
 });
