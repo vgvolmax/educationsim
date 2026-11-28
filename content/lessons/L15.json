@@ -3,7 +3,7 @@
   "feedback": "on-submit",
   "id": "L15",
   "title": "Клиент: комплект на четыре петли",
-  "goal": "Для трёх комнат требуется четыре петли. Проверьте состав «Эко 4», добавьте недостающую трубу и не дублируйте насос. Обоснуйте проверку замены 130/180 мм.",
+  "goal": "Клиенту нужен комплект «Эко 4» для трёх комнат. План включает четыре контура. Соберите заказ по карточке и объясните, как проверите замену насоса с монтажной длиной 130 или 180 мм.",
   "explanation": "Число петель не равно числу комнат. Труба покупается отдельно; наличие насоса проверяется по конкретному составу. Монтажная длина, присоединения и рабочая точка проверяются вместе.",
   "minutes": 12,
   "hints": [
@@ -12,14 +12,14 @@
   "cases": [
     {
       "id": "main",
-      "title": "Контрольный прогон прямого контура",
+      "title": "Контрольный стенд с двумя петлями",
       "template": "direct"
     }
   ],
   "actions": [
     {
       "id": "step",
-      "label": "Рассчитать один тик",
+      "label": "Один шаг расчёта",
       "type": "step",
       "ticks": 1
     },
@@ -28,28 +28,32 @@
       "label": "Добавить один комплект Эко 4",
       "type": "quantity",
       "item": "kit-eco-4",
-      "delta": 1
+      "delta": 1,
+      "itemLabel": "Комплект «Эко 4»"
     },
     {
       "id": "pipe-plus",
       "label": "Добавить отдельную трубу",
       "type": "quantity",
       "item": "pipe",
-      "delta": 1
+      "delta": 1,
+      "itemLabel": "Труба"
     },
     {
       "id": "extra-pump",
       "label": "Добавить ещё один насос",
       "type": "quantity",
       "item": "extra-pump",
-      "delta": 1
+      "delta": 1,
+      "itemLabel": "Дополнительный насос"
     },
     {
       "id": "remove-extra",
       "label": "Убрать лишний насос",
       "type": "quantity",
       "item": "extra-pump",
-      "delta": -1
+      "delta": -1,
+      "itemLabel": "Дополнительный насос"
     },
     {
       "id": "count",
@@ -85,6 +89,29 @@
       "type": "answer",
       "field": "explanation",
       "value": "head"
+    },
+    {
+      "id": "remove-kit",
+      "label": "Убрать один комплект Эко 4",
+      "type": "quantity",
+      "item": "kit-eco-4",
+      "itemLabel": "Комплект «Эко 4»",
+      "delta": -1
+    },
+    {
+      "id": "remove-pipe",
+      "label": "Убрать отдельную трубу",
+      "type": "quantity",
+      "item": "pipe",
+      "itemLabel": "Труба",
+      "delta": -1
+    },
+    {
+      "id": "category-only",
+      "label": "Сообщить, что адаптеров нет, по описанию категории",
+      "type": "answer",
+      "field": "choice",
+      "value": "category-only"
     }
   ],
   "criteria": [
@@ -132,5 +159,10 @@
     "offerId": "36872",
     "article": "17052-04eco",
     "url": "https://volmax.ru/catalog/inzhenernaya-santekhnika/kollektory-i-kollektornye-gruppy/komplekty-dlya-teplogo-pola/komplekt-dlya-teplogo-pola-1-kh3-4-4-vykh-eko/"
+  },
+  "questions": {
+    "clarification": "Сколько выходов коллектора нужно?",
+    "choice": "Что скажете клиенту о евроконусах?",
+    "explanation": "Что проверите при замене насоса?"
   }
 }

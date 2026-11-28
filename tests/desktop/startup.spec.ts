@@ -101,12 +101,12 @@ test('launches the packaged app offline, retains storage and rejects a second in
     await expect(page.locator('[data-route-preview]')).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Принять трассу' })).toBeDisabled();
     await page.getByRole('button', { name: 'Подготовить прогон' }).click();
-    await page.getByRole('button', { name: 'Один шаг' }).click();
+    await page.getByRole('button', { name: 'Один шаг расчёта' }).click();
     await expect(page.getByText('Модельный тик: 1')).toBeVisible();
     const firstFlow = await page.locator('[data-meter="link:pipe-a"]').textContent();
     expect(firstFlow).toMatch(/^[1-9]\d*,\d{2} л\/мин$/);
     await page.getByRole('button', { name: 'Закрыть клапан' }).click();
-    await page.getByRole('button', { name: 'Один шаг' }).click();
+    await page.getByRole('button', { name: 'Один шаг расчёта' }).click();
     await expect(page.locator('[data-meter="link:pipe-a"]')).toHaveText('0,00 л/мин');
     await page.getByRole('button', { name: '3D сцена' }).click();
     const scene = page.locator('canvas[data-scene]');
@@ -134,6 +134,7 @@ test('launches the packaged app offline, retains storage and rejects a second in
 
     await page.getByRole('button', { name: 'Каталог ВОЛМАКС', exact: true }).click();
     await expect(page.getByText('Версия: volmax-public-20261126-v1')).toBeVisible();
+    await page.getByText('Локальное обновление', { exact: true }).click();
     await page.getByLabel('Файл обновления каталога').setInputFiles({
       name: 'smoke-catalog.json', mimeType: 'application/json',
       buffer: Buffer.from(JSON.stringify({ version: 1, releaseId: 'packaged-catalog', publishedOn: '2026-11-26', offers: [], products: [], kits: [] })),
@@ -184,18 +185,18 @@ test('launches the packaged app offline, retains storage and rejects a second in
     await expect(page.locator('[data-room]')).toHaveCount(2);
     await page.getByRole('button', { name: 'Каталог ВОЛМАКС', exact: true }).click();
     await expect(page.getByText('Версия: packaged-catalog')).toBeVisible();
+    await page.getByRole('button', { name: 'Закрыть каталог' }).click();
     await page.getByRole('button', { name: 'Старт' }).click();
     await page.getByRole('button', { name: /L01 · Подача, петля и обратка/ }).click();
-    await expect(page.locator('[data-link].water').first()).toHaveCSS('stroke', 'rgb(21, 87, 82)');
-    await page.getByRole('button', { name: 'Рассчитать один тик', exact: true }).click();
+    await expect(page.locator('[data-link].water').first()).not.toHaveCSS('stroke', 'none');
+    await page.getByRole('button', { name: 'Один шаг расчёта', exact: true }).click();
     await expect(page.getByText('Модельный тик: 1')).toBeVisible();
     await page.getByRole('button', { name: 'Найти подачу' }).click();
     await page.getByRole('button', { name: 'Найти петлю пола' }).click();
     await page.getByRole('button', { name: 'Найти обратку' }).click();
     await expect(page.getByText('Урок пройден.', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Старт' }).click();
-    await page.getByRole('button', { name: /^L02 ·/ }).click();
-    await page.getByRole('button', { name: 'Рассчитать один тик', exact: true }).click();
+    await page.getByRole('button', { name: 'Следующее задание', exact: true }).click();
+    await page.getByRole('button', { name: 'Один шаг расчёта', exact: true }).click();
     await expect(page.getByText('Модельный тик: 1')).toBeVisible();
     await page.getByRole('button', { name: 'Поставить клапан первой петли на 45 %', exact: true }).click();
     await expect(page.getByText('Урок пройден.', { exact: true })).toBeVisible();

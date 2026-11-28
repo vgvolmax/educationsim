@@ -86,7 +86,7 @@ export function createSimulationClient(
   const visibility = () => { send({ kind: 'visibility', visible: !globalThis.document?.hidden }); };
   globalThis.document?.addEventListener('visibilitychange', visibility);
   return {
-    get state() { return state; }, load, send,
+    get state() { return state; }, get pending() { return awaiting.size > 0; }, load, send,
     dispose() { stop(); clearInterval(timer); active = undefined; globalThis.document?.removeEventListener('visibilitychange', visibility); },
   };
 }

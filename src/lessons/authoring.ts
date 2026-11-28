@@ -22,12 +22,12 @@ const scene = z.strictObject({ id, title: name, template: z.enum(templateIds),
 });
 const commonAction = { id, label: name, forCase: id.optional() };
 const actions = z.discriminatedUnion('type', [
-  z.strictObject({ ...commonAction, type: z.literal('step'), ticks: z.int().min(1).max(120).optional() }),
+  z.strictObject({ ...commonAction, type: z.literal('step'), ticks: z.int().min(1).max(120).optional(), untilTick: z.int().min(1).max(120).optional() }),
   z.strictObject({ ...commonAction, type: z.literal('command'), command: simulationCommandSchema }),
   z.strictObject({ ...commonAction, type: z.literal('case'), caseId: id }),
   z.strictObject({ ...commonAction, type: z.literal('inspect'), target: address }),
   z.strictObject({ ...commonAction, type: z.literal('answer'), field: fields, value: id }),
-  z.strictObject({ ...commonAction, type: z.literal('quantity'), item: id, delta: z.union([z.literal(1), z.literal(-1)]) }),
+  z.strictObject({ ...commonAction, type: z.literal('quantity'), item: id, itemLabel: name.optional(), delta: z.union([z.literal(1), z.literal(-1)]) }),
 ]);
 const commonRule = { id, label: name, caseId: id.optional() };
 const rules = z.discriminatedUnion('type', [
@@ -45,7 +45,7 @@ const schema = z.strictObject({
   version: z.literal(1), id: z.string().regex(/^L(0[1-9]|1[0-5])$/), title: name, goal: prose, explanation: prose,
   sourceCard: z.strictObject({ offerId: z.string().regex(/^\d{1,12}$/), article: name,
     url: z.url({ protocol: /^https$/, hostname: /^volmax\.ru$/ }).regex(/^https:\/\/volmax\.ru\/catalog\//) }).optional(),
-  minutes: z.int().min(1).max(45), hints: z.array(prose).max(10), feedback: z.enum(['guided', 'on-submit']).optional(),
+  minutes: z.int().min(1).max(45), hints: z.array(prose).max(10), questions: z.partialRecord(fields, name).optional(), feedback: z.enum(['guided', 'on-submit']).optional(),
   cases: z.array(scene).min(1).max(6), actions: z.array(actions).min(1).max(80), criteria: z.array(rules).min(1).max(30),
 });
 export type Lesson = z.infer<typeof schema>;

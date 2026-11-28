@@ -1,4 +1,5 @@
-import { equipmentRegistry } from '../../project/registry';
+import { equipmentRegistry, trainingRegistry } from '../../project/registry';
+import { portLabel } from '../../editor/portLabel';
 import type { ProjectDocument } from '../../project/types';
 import type { SessionView } from '../../simulation/session';
 import type { CompiledSystem } from '../../simulation/types';
@@ -21,12 +22,21 @@ export function componentCutaway(doc: ProjectDocument, system: CompiledSystem | 
   const isExchanger = definition.variant === 'plate-exchanger' || definition.variant === 'external-source';
   const internal = system?.hydraulicChannels.filter((c) => c.origin.componentId === componentId) ?? [];
   const chosen = internal.length ? internal : system?.hydraulicChannels.filter((c) => c.origin.linkId && related.has(c.origin.linkId)) ?? [];
+  const components = new Map(doc.components.map((item) => [item.id, item]));
+  function portName(ownerId: string, portId: string) {
+    const owner = components.get(ownerId);
+    const port = owner && trainingRegistry.get(owner.typeId)?.ports.find(({ id }) => id === portId);
+    return port ? portLabel(port) : portId === 'return' ? 'Обратка' :
+      portId === 'supply' ? 'Подача' : portId === 'feed' ? 'Вход подачи' : 'Внутренний канал';
+  }
   const paths = chosen.map((c) => {
     const channel = current ? view.snapshot.hydraulics?.channels[c.id] : undefined;
     const liquid = system?.hydraulicDomains.find((d) => d.id === c.domainId)?.fluid.kind ?? null;
     const link = c.origin.linkId ? related.get(c.origin.linkId) : undefined;
     const local = (value: string) => value.startsWith(componentId + ':') ? value.slice(componentId.length + 1) : value;
-    return { id: c.id, from: link?.from.portId ?? local(c.from), to: link?.to.portId ?? local(c.to),
+    return { id: c.id,
+      from: portName(link?.from.componentId ?? componentId, link?.from.portId ?? local(c.from)),
+      to: portName(link?.to.componentId ?? componentId, link?.to.portId ?? local(c.to)),
       lMin: channel ? channel.flowM3s * 60_000 : null, liquid,
       opening: current ? view.snapshot.valveOpenings[c.id] ?? null : null, status: channel?.valve?.status ?? channel?.state ?? null };
   });

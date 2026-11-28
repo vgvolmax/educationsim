@@ -63,7 +63,7 @@ export function Scene({ project, level, selected, live, onSelect, onUnavailable 
       aria-keyshortcuts="ArrowUp ArrowLeft ArrowDown ArrowRight W A S D" aria-label="Интерактивная 3D схема. Объекты доступны в списке слева." />
     <div className="scene-legend">
       <p>{component ? 'Выбрано в 3D: ' + (equipmentRegistry.get(component.typeId)?.titleRu ?? component.typeId) : 'Выберите узел на схеме или в списке.'}</p>
-      <p>Поток: знак и скорость Q/A; масштаб частиц ×{numberRu(visualTimeScale, 2)} от физического. {frame?.stale ?
+      <p>Частицы показывают направление и скорость потока. Скорость анимации ×{numberRu(visualTimeScale, 2)}. {frame?.stale ?
         'Нет актуального кадра, последний тик ' + frame.snapshot.tick + '.' : frame ? 'Модельный тик ' + frame.snapshot.tick + '.' : 'Расчёт не запущен.'}</p>
       {section && <p>Условный разрез: основание, теплоизоляция, стяжка и покрытие. Толщины на рисунке не паспортные.</p>}
       {warm.length > 0 && <ul>{warm.map((entry) => <li key={entry.roomId}>
@@ -77,7 +77,7 @@ export function Scene({ project, level, selected, live, onSelect, onUnavailable 
       <p>{activeCut.separated ? 'Контуры передают тепло, но жидкости не смешиваются.' : 'Показаны подключённые пути и доступные расчётные показания.'}</p>
       <CutawayDiagram model={activeCut} />
       {activeCut.paths.length > 0 ? <div className="cutaway-paths">
-        {activeCut.paths.map((path) => <div key={path.id} className={'cutaway-path ' + (path.liquid === 'propylene-glycol' ? 'glycol' : 'water')}>
+        {activeCut.paths.map((path) => <div key={path.id} data-channel={path.id} className={'cutaway-path ' + (path.liquid === 'propylene-glycol' ? 'glycol' : 'water')}>
           <strong>{path.from} {path.lMin !== null && path.lMin < 0 ? '←' : path.lMin === 0 ? '⊣' : '→'} {path.to}</strong>
           <span>{path.lMin === null ? 'нет актуального расхода' : numberRu(path.lMin) + ' л/мин'}</span>
           {path.liquid && <span>{path.liquid === 'propylene-glycol' ? 'пропиленгликоль' : 'вода'}</span>}

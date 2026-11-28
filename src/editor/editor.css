@@ -171,3 +171,38 @@
   .editor-center { inline-size: 100%; }
 }
 .editor .file-pick input[type=file] { min-height: 0; padding: 0; border: 0; }
+
+.editor .work-body { padding-top: .6rem; }
+.work-body.wide-scene { grid-template-columns: minmax(9rem, 14rem) minmax(0, 1fr); }
+.work-panel[hidden], .project-menu-content[hidden] { display: none; }
+.work-panel label.toggle-field { justify-content: flex-start; overflow-wrap: normal; }
+.work-panel label.toggle-field input[type=checkbox] { width: auto; flex: 0 0 auto; }
+.project-menu { display: flex; flex-wrap: wrap; gap: .35rem .6rem; align-items: center; margin-inline-start: auto; }
+.project-menu:has(.project-menu-content:not([hidden])) { width: 100%; }
+.project-menu > .save-state { font-size: .78rem; color: var(--muted); }
+.project-menu > .save-state[data-save=error] { color: var(--warn-ink); }
+.project-menu-content { width: 100%; min-inline-size: 0; }
+.project-menu-content .workspace-tools { margin: .3rem 0; }
+.project-title-form { display: flex; align-items: end; gap: .45rem; flex-wrap: wrap; margin-block: .5rem; }
+.project-title-form label { display: grid; gap: .2rem; min-width: 0; }
+.editor-catalog { position: fixed; z-index: 3; inset-block: .65rem; inset-inline-end: .65rem;
+  width: min(46rem, calc(100% - 1.3rem)); min-width: 0; overflow: auto; overscroll-behavior: contain; background: var(--surface);
+  border: 1px solid var(--edge); border-radius: var(--card-radius); box-shadow: 0 .8rem 2.7rem #143a3e44; }
+.catalog-close { display: flex; justify-content: end; position: sticky; top: 0; background: var(--surface);
+  padding: .45rem .75rem; border-bottom: 1px solid var(--edge); z-index: 1; }
+.editor-catalog .catalog-panel { margin: .45rem; box-shadow: none; }
+.simulation-controls { margin-block: 0 .55rem; padding: .65rem .75rem; }
+.simulation-controls .simulation-title { margin-bottom: .3rem; }
+.simulation-controls .simulation-title h2 { font-size: 1.08rem; }
+.simulation-controls > p { font-size: .85rem; color: var(--muted); }
+.connection-compact { margin: .35rem min(2vw, 1.2rem); }
+@media (max-width: 510px) {
+  .project-menu { margin-inline-start: 0; }
+}
+
+.simulation-controls .simulation-actions button { font-size: .875rem; }
+.simulation-controls .simulation-actions label { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .35rem; font-size: .85rem; }
+@media (min-width: 851px) and (max-width: 1120px) {
+  .work-body { grid-template-columns: minmax(8rem, 10rem) minmax(0, 1fr) minmax(12rem, 14rem); }
+  .work-body.wide-scene { grid-template-columns: minmax(8rem, 10rem) minmax(0, 1fr); }
+}

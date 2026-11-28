@@ -5,7 +5,7 @@ import type { TemplateId } from '../project/templates';
 import type { ProjectDocument } from '../project/types';
 import { captureFrame } from '../simulation/comparison';
 import type { ProjectArtifacts } from '../storage/project-transfer';
-import type { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import type { SimulationRecord } from '../simulation/replay';
 import type { SimulationCommand, SimulationScenario } from '../simulation/engine-types';
 import type { SessionView, SimulationSpeed } from '../simulation/session';
@@ -41,8 +41,8 @@ function ValvePosition({ accepted, enabled, onChange }: {
   </form>;
 }
 
-export function SimulationPanel({ project, preset, artifacts, onArtifacts, onFocus, onLive }: {
-  project: ProjectDocument; preset?: TemplateId; artifacts: ProjectArtifacts; onArtifacts: Dispatch<SetStateAction<ProjectArtifacts>>; onFocus(id: string): void; onLive?(live: SceneLive | null): void;
+export function SimulationPanel({ project, preset, artifacts, onArtifacts, onFocus, onLive, children }: {
+  project: ProjectDocument; preset?: TemplateId; artifacts: ProjectArtifacts; onArtifacts: Dispatch<SetStateAction<ProjectArtifacts>>; onFocus(id: string): void; children: ReactNode; onLive?(live: SceneLive | null): void;
 }) {
   const [run, setRun] = useState<Run | null>(null);
   const [view, setView] = useState<Client['state'] | null>(null);
@@ -125,26 +125,35 @@ export function SimulationPanel({ project, preset, artifacts, onArtifacts, onFoc
     const captured = captureFrame(current.scenario, atSameTime ?? frame);
     if (captured) onArtifacts((all) => ({ ...all, captures: { ...all.captures, [side]: captured } }));
   }
-  return <section aria-label="Расчёт" className="simulation-panel">
-    <div className="simulation-title"><div><p className="eyebrow">Учебный режим</p><h2>Расчёт и эксперимент</h2></div>
+  const firstLoop = current?.scenario.system.hydraulicChannels.find((channel) => channel.origin.loopRouteId);
+  const firstFlow = activeFrame && firstLoop && frame.snapshot.hydraulics?.channels[firstLoop.id]?.flowM3s;
+  return <>
+    <section aria-label="Расчёт" className="simulation-panel simulation-controls">
+    <div className="simulation-title"><h2>Расчёт и эксперимент</h2>
       <button onClick={prepare}>{current ? 'Начать новый прогон' : 'Подготовить прогон'}</button></div>
-    {!current && <p>{run ? 'Схема изменилась. Подготовьте новый прогон; снимки А и Б сохранены.' : 'Расчёт начнётся с текущей схемы и её начальных условий.'}</p>}
+    {!current && <p>{run ? 'Схема изменилась. Подготовьте новый прогон. Снимки А и Б сохранены.' : 'Расчёт начнётся с текущей схемы и её начальных условий.'}</p>}
     {error && <p className="editor-error" role="alert">{error}</p>}
     {current && <div>
       <p className="run-status"><strong>{modes[view?.mode ?? 'loading']}</strong>
         {frame && <span>Модельный тик: {frame.snapshot.tick}</span>}
+        {typeof firstFlow === 'number' && <span>Расход первой петли: {numberRu(firstFlow * 60_000)} л/мин</span>}
         {view?.mode === 'running' && <span>{speed === null ? 'Измеряем темп…' : 'Фактически ×' + numberRu(speed, 1)}</span>}
         {frame?.throttled && <span>Ускорение ограничено</span>}</p>
       <div className="simulation-actions">
         <button disabled={!available || view?.mode === 'running'} onClick={() => current.client.send({ kind: 'resume' })}>Пуск</button>
         <button disabled={!available || view?.mode !== 'running'} onClick={() => current.client.send({ kind: 'pause' })}>Пауза</button>
-        <button disabled={!available || view?.mode === 'running'} onClick={() => current.client.send({ kind: 'step' })}>Один шаг</button>
+        <button disabled={!available || view?.mode === 'running'} onClick={() => current.client.send({ kind: 'step' })}>Один шаг расчёта</button>
         <button disabled={view?.mode === 'loading' || view?.mode === 'stalled'} onClick={() => current.client.send({ kind: 'reset' })}>Сбросить прогон</button>
         <label>Скорость прогона <select value={frame?.speed ?? 1} disabled={!available}
           onChange={(e) => current.client.send({ kind: 'speed', speed: Number(e.target.value) as SimulationSpeed })}>
           {[1, 10, 60, 600].map((s) => <option value={s} key={s}>×{s}</option>)}
         </select></label>
       </div>
+    </div>}
+    </section>
+    {children}
+    {(current || a || b || artifacts.records.length > 0) && <section className="simulation-panel" aria-label="Показания и эксперименты">
+    {current && <div>
       {!!notes.length && <details className="editor-section"><summary>Ограничения схемы</summary><ul>{notes.map((n, i) => <li key={i}>{n}</li>)}</ul></details>}
       {!frame && !!view?.diagnostics.length && <p className="editor-error">{view.diagnostics.map((d) => d.message).join(' ')}</p>}
       <div className="simulation-actions">
@@ -185,5 +194,6 @@ export function SimulationPanel({ project, preset, artifacts, onArtifacts, onFoc
       {a && <small>А: тик {a.tick}, ред. {a.revision}</small>}{b && <small>Б: тик {b.tick}, ред. {b.revision}</small>}
     </div>
     {a && b && <Comparison a={a} b={b} />}
-  </section>;
+    </section>}
+  </>;
 }

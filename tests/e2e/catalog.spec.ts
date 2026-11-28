@@ -31,7 +31,7 @@ test('a catalog analogue can attach to an equivalent mounted source, keep its li
   await expect(page.locator('[data-link]')).toHaveCount(4);
   await expect(page.getByText(/Учебный аналог из каталога · volmax-public-20261126-v1/)).toBeVisible();
   await page.getByRole('button', { name: 'Подготовить прогон' }).click();
-  await page.getByRole('button', { name: 'Один шаг' }).click();
+  await page.getByRole('button', { name: 'Один шаг расчёта' }).click();
   await expect(page.locator('[data-meter="link:pipe-a"]')).toContainText(/^[1-9]/);
 });
 test('radiator valve is blocked in a floor loop but available in radiator context', async ({ page }) => {
@@ -59,6 +59,7 @@ test('local_catalog_update_is_atomic_and_survives_restart', async ({ page }) => 
   await open(page);
   const payload = { version: 1, releaseId: 'local-test', publishedOn: '2026-11-26',
     offers: [], products: [], kits: [] };
+  await page.getByText('Локальное обновление', { exact: true }).click();
   const upload = page.getByLabel('Файл обновления каталога');
   await upload.setInputFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{"version":99}') });
   await expect(page.getByText('Обновление отклонено.')).toBeVisible();
@@ -75,6 +76,7 @@ test('local_catalog_update_is_atomic_and_survives_restart', async ({ page }) => 
 test('changes active catalog without deleting either saved release and preserves the choice across restart', async ({ page }) => {
   await open(page);
   const data = { version: 1, releaseId: 'local-reference-rollback', publishedOn: '2026-11-26', offers: [], products: [], kits: [] };
+  await page.getByText('Локальное обновление', { exact: true }).click();
   await page.getByLabel('Файл обновления каталога').setInputFiles({
     name: 'reference.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(data)),
   });
@@ -88,6 +90,7 @@ test('changes active catalog without deleting either saved release and preserves
   await expect(page.getByText('Версия: volmax-public-20261126-v1')).toBeVisible();
   await open(page);
   await expect(page.getByText('Версия: volmax-public-20261126-v1')).toBeVisible();
+  await page.getByText('Локальное обновление', { exact: true }).click();
   await release.selectOption('saved:local-reference-rollback');
   await select.click();
   await expect(page.getByText('Версия: local-reference-rollback')).toBeVisible();

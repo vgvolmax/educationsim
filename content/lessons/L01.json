@@ -18,7 +18,7 @@
   "actions": [
     {
       "id": "step",
-      "label": "Рассчитать один тик",
+      "label": "Один шаг расчёта",
       "type": "step",
       "ticks": 1
     },

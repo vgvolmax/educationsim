@@ -7,7 +7,7 @@ import { replay } from '../../src/simulation/replay';
 
 const bench = resolve('tests/fixtures/projects/benchmark-large.json');
 const prepare = (page: Page) => page.getByRole('button', { name: 'Подготовить прогон' }).click();
-const step = (page: Page) => page.getByRole('button', { name: 'Один шаг' }).click();
+const step = (page: Page) => page.getByRole('button', { name: 'Один шаг расчёта' }).click();
 
 test('assembles_edits_runs_saves_imports_and_replays_large_project', async ({ page }) => {
   test.setTimeout(55_000);
@@ -35,6 +35,7 @@ test('assembles_edits_runs_saves_imports_and_replays_large_project', async ({ pa
   await page.getByRole('button', { name: 'Открыть последний сохранённый проект' }).click();
   await expect(page.getByText('Редакция 2')).toBeVisible();
   await expect(page.getByText(/А: редакция 1, тик 1. Б: редакция 2, тик 1./)).toBeVisible();
+  await page.getByRole('button', { name: 'Файлы и имя проекта' }).click();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Экспорт проекта и прогонов' }).click();
   const text = await readFile((await (await download).path())!, 'utf8');

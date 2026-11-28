@@ -1,40 +1,81 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
-test('the first lesson action and the water connections are visible at office window size', async ({ page }) => {
+const button = (page: Page, name: string) => page.getByRole('button', { name, exact: true });
+
+async function openCase(page: Page) {
+  await page.goto('/');
+  await page.getByRole('button', { name: /^L15 ·/ }).click();
+}
+
+async function fillCase(page: Page, wrongPump: boolean) {
+  await button(page, 'Один шаг расчёта').click();
+  await button(page, 'Добавить один комплект Эко 4').click();
+  await button(page, 'Добавить отдельную трубу').click();
+  if (wrongPump) await button(page, 'Добавить ещё один насос').click();
+  await page.getByRole('radio', { name: 'Четыре петли, хотя комнат три' }).check();
+  await page.getByRole('radio', { name: 'По карточке восемь евроконусов; подтвердить расхождение' }).check();
+  await page.getByRole('radio', { name: 'Сверить 130/180 мм, присоединения и рабочую точку' }).check();
+}
+
+test('an assessed case shows measurements, answers and the offline source at office window size', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 720 });
-  await page.goto('/');
-  await page.getByRole('button', { name: /^L15 ·/ }).click();
-  await page.evaluate(() => scrollTo(0, 0));
-  const diagram = page.getByRole('img', { name: 'Схема этажа' });
-  await expect(diagram.locator('[data-link].water').first()).toHaveCSS('stroke', 'rgb(21, 87, 82)');
-  await expect(page.getByRole('button', { name: 'Рассчитать один тик' })).toBeInViewport({ ratio: 1 });
-  await expect(page.getByText('Расход · Петля 1 · Нет данных')).toBeVisible();
+  await openCase(page);
+  await expect(button(page, 'Один шаг расчёта')).toBeInViewport({ ratio: 1 });
+  await expect(page.getByRole('region', { name: 'Состав заказа' })).toBeInViewport({ ratio: 1 });
+  await expect(page.getByRole('heading', { name: 'Вопросы' })).toBeInViewport({ ratio: 1 });
+  await expect(page.getByRole('complementary', { name: 'Измерения и готовность' })).toContainText('Расход · Петля 1');
   await expect(page.getByText('link:pipe-a', { exact: false })).toHaveCount(0);
+  await expect(page.getByText('Ровно нужные позиции, без лишних')).toHaveCount(0);
+  await expect(page.getByText(/Число петель не равно числу комнат/)).toHaveCount(0);
+  await expect(button(page, 'Завершить попытку')).toBeDisabled();
+  await page.getByText('Карточка комплекта · 17052-04eco', { exact: true }).click();
+  await expect(page.getByText(/евроконус.*8 шт\./i)).toBeVisible();
+  await page.getByText('Схема контрольного стенда', { exact: true }).click();
+  const link = page.getByRole('img', { name: 'Схема этажа' }).locator('[data-link].water').first();
+  await expect(link).toHaveCSS('stroke', 'rgb(21, 87, 82)');
   await page.emulateMedia({ forcedColors: 'active' });
-  await expect(diagram.locator('[data-link].water').first()).not.toHaveCSS('stroke', 'none');
+  await expect(link).not.toHaveCSS('stroke', 'none');
 });
 
-test('restarting an assessed lesson hides the walkthrough and restores the unsubmitted state', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: /^L15 ·/ }).click();
-  await page.getByRole('button', { name: 'Показать разбор', exact: true }).click();
-  const explanation = page.getByText(/Число петель не равно числу комнат/);
-  await expect(explanation).toBeVisible();
-  await page.getByRole('button', { name: 'Начать попытку заново' }).click();
-  await expect(explanation).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Завершить попытку', exact: true })).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Сохранить отчёт наставнику' })).toBeDisabled();
+test('quantities can be corrected without restarting the case or losing answers', async ({ page }) => {
+  await openCase(page);
+  await fillCase(page, false);
+  await button(page, 'Добавить один комплект Эко 4').click();
+  await button(page, 'Добавить отдельную трубу').click();
+  await expect(page.getByRole('status', { name: 'Комплект «Эко 4»' })).toHaveText('2');
+  await button(page, 'Убрать один комплект Эко 4').click();
+  await button(page, 'Убрать отдельную трубу').click();
+  await expect(page.getByRole('status', { name: 'Комплект «Эко 4»' })).toHaveText('1');
+  await expect(page.getByRole('status', { name: 'Труба' })).toHaveText('1');
+  await expect(page.getByRole('radio', { name: 'Четыре петли, хотя комнат три' })).toBeChecked();
+  await button(page, 'Завершить попытку').click();
+  await expect(page.getByText('Урок пройден.', { exact: true })).toBeVisible();
 });
 
-test('a submitted lesson stays unsubmitted after restart and new interaction', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: /^L15 ·/ }).click();
-  await page.getByRole('button', { name: 'Рассчитать один тик' }).click();
-  await page.getByRole('button', { name: 'Завершить попытку', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Сохранить отчёт наставнику' })).toBeEnabled();
-  await page.getByRole('button', { name: 'Начать попытку заново' }).click();
-  await expect(page.getByRole('heading', { name: 'Клиент: комплект на четыре петли', exact: true })).toBeFocused();
-  await page.getByRole('button', { name: 'Рассчитать один тик' }).click();
-  await expect(page.getByRole('button', { name: 'Завершить попытку', exact: true })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Сохранить отчёт наставнику' })).toBeDisabled();
+test('submitted attempts preserve their results across retries and reload and export their own run', async ({ page }) => {
+  await openCase(page);
+  await fillCase(page, true);
+  await button(page, 'Завершить попытку').click();
+  await expect(page.getByText('Частичный результат.')).toBeVisible();
+  await expect(page.getByText('4 из 5', { exact: false })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Разбор' })).toBeVisible();
+  await expect(button(page, 'Убрать лишний насос')).toHaveCount(0);
+  await button(page, 'Новая попытка').click();
+  await expect(button(page, 'Завершить попытку')).toBeDisabled();
+  await fillCase(page, false);
+  await button(page, 'Завершить попытку').click();
+  await expect(page.getByText('Урок пройден.', { exact: true })).toBeVisible();
+  await openCase(page);
+  await expect(page.getByText('Урок пройден.', { exact: true })).toBeVisible();
+  const history = page.getByLabel('История попыток');
+  await history.selectOption({ index: 1 });
+  await expect(page.getByText('Частичный результат.')).toBeVisible();
+  await page.getByText('Что было сдано', { exact: true }).click();
+  await expect(page.getByText('Дополнительный насос · 1 шт.')).toBeVisible();
+  const downloading = page.waitForEvent('download');
+  await button(page, 'Сохранить отчёт наставнику').click();
+  const result = JSON.parse(await readFile((await (await downloading).path())!, 'utf8'));
+  expect(result).toMatchObject({ grade: { count: 4, total: 5 }, records: { main: { untilTick: 1 } } });
 });

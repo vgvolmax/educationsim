@@ -38,10 +38,15 @@ function RoomForm({ room, ctl }: { room: Room; ctl: ProjectController }) {
   </form>;
 }
 
-export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, files }: { ctl: ProjectController; project: ProjectDocument; preset?: TemplateId;
-  artifacts: ProjectArtifacts; onArtifacts: Dispatch<SetStateAction<ProjectArtifacts>>; onHome(): void; files?: ReactNode }) {
+export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, files, fileStatus, fileAttention }: { ctl: ProjectController; project: ProjectDocument; preset?: TemplateId;
+  artifacts: ProjectArtifacts; onArtifacts: Dispatch<SetStateAction<ProjectArtifacts>>; onHome(): void; files?: ReactNode; fileStatus?: ReactNode; fileAttention?: boolean }) {
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [catalogOpen, setCatalogOpen] = useState(false);
+  const [sceneInspector, setSceneInspector] = useState(false);
+  const [showConnections, setShowConnections] = useState(false);
+  const [filesOpen, setFilesOpen] = useState(false);
+  const catalogTrigger = useRef<HTMLButtonElement>(null);
+  const catalogClose = useRef<HTMLButtonElement>(null);
   const [sceneFailed, setSceneFailed] = useState(false);
   const [liveScene, setLiveScene] = useState<SceneLive | null>(null);
   const [level, setLevel] = useState(project.viewPreferences.level);
@@ -76,6 +81,11 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
     document.querySelector<HTMLElement>('.editor h1')?.focus();
   }, []);
 
+  useEffect(() => { if (catalogOpen) catalogClose.current?.focus(); }, [catalogOpen]);
+  function closeCatalog() {
+    setCatalogOpen(false);
+    catalogTrigger.current?.focus();
+  }
   function cancelConnection() { setPending(null); setConnectionMessage(''); }
   function keyEdit(e: KeyboardEvent) {
     if (e.key === 'Escape') { cancelConnection(); return; }
@@ -142,25 +152,39 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
       <div className="toolbar-group" role="group" aria-label="История правок"><button disabled={!ctl.history?.past.length} onClick={() => { cancelConnection(); ctl.changeHistory('undo'); }}>Отменить</button>
       <button disabled={!ctl.history?.future.length} onClick={() => { cancelConnection(); ctl.changeHistory('redo'); }}>Повторить</button></div>
       <div className="toolbar-group view-group" role="group" aria-label="Вид проекта">
-      <button aria-expanded={catalogOpen} onClick={() => setCatalogOpen((open) => !open)}>Каталог ВОЛМАКС</button>
+      <button ref={catalogTrigger} aria-expanded={catalogOpen} aria-controls={catalogOpen ? 'editor-catalog' : undefined}
+        onClick={() => catalogOpen ? closeCatalog() : setCatalogOpen(true)}>Каталог ВОЛМАКС</button>
       <button aria-pressed={viewMode === '2d'} onClick={() => setViewMode('2d')}>2D схема</button>
       <button aria-pressed={viewMode === '3d'} onClick={() => { setSceneFailed(false); setViewMode('3d'); }}>3D сцена</button></div>
-      <div className="toolbar-group layer-group" role="group" aria-label="Слои 2D"><label><input type="checkbox" checked={water} onChange={(e) => setWater(e.target.checked)} /> Вода</label>
-      <label><input type="checkbox" checked={control} onChange={(e) => setControl(e.target.checked)} /> Управление</label></div>
+      {viewMode === '2d' ? <div className="toolbar-group layer-group" role="group" aria-label="Слои 2D"><label><input type="checkbox" checked={water} onChange={(e) => setWater(e.target.checked)} /> Вода</label>
+      <label><input type="checkbox" checked={control} onChange={(e) => setControl(e.target.checked)} /> Управление</label></div> :
+        <button aria-pressed={sceneInspector} onClick={() => setSceneInspector((open) => !open)}>Монтаж и свойства</button>}
+      <div className="project-menu">
+        <button aria-expanded={filesOpen || fileAttention} aria-controls="project-files"
+          onClick={() => setFilesOpen((open) => !open)}>Файлы и имя проекта</button>
+        {fileStatus}
+        <div className="project-menu-content" id="project-files" hidden={!filesOpen && !fileAttention}>
+          {files}
+          <form className="project-title-form" onSubmit={(event) => {
+            event.preventDefault();
+            const title = String(new FormData(event.currentTarget).get('title')).trim();
+            ctl.apply({ kind: 'rename_project', commandId: editorId('title'), title });
+          }}>
+            <label>Имя проекта<input name="title" defaultValue={project.title} key={project.title} /></label>
+            <button type="submit">Сохранить имя</button>
+          </form>
+        </div>
+      </div>
     </div>
-    {files}
-    <details className="editor-section rename-project"><summary>Имя проекта</summary>
-      <form className="project-title-form" onSubmit={(event) => {
-        event.preventDefault();
-        const title = String(new FormData(event.currentTarget).get('title')).trim();
-        ctl.apply({ kind: 'rename_project', commandId: editorId('title'), title });
-      }}>
-        <label>Новое имя<input name="title" defaultValue={project.title} key={project.title} /></label>
-        <button type="submit">Сохранить имя</button>
-      </form>
-    </details>
     {ctl.error && <p className="editor-error" role="alert">{ctl.error}</p>}
-    <div className="work-body">
+    {catalogOpen && <aside className="editor-catalog" id="editor-catalog" aria-label="Справочник проекта" onKeyDown={(event) => {
+      if (event.key === 'Escape') { event.stopPropagation(); closeCatalog(); }
+    }}>
+      <div className="catalog-close"><button ref={catalogClose} onClick={closeCatalog}>Закрыть каталог</button></div>
+      <Suspense fallback={<p>Открываем встроенный каталог…</p>}><CatalogPanel project={project} selected={component} level={level}
+        ctl={ctl} onPlaced={(id) => { setSelected(id); closeCatalog(); }} /></Suspense>
+    </aside>}
+    <div className={'work-body' + (viewMode === '3d' && !sceneInspector ? ' wide-scene' : '')}>
       <aside className="work-tree" aria-label="Объекты этажа">
         <h2>Комнаты</h2>
         {!rooms.length && <p>Нет комнат</p>}
@@ -172,21 +196,23 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
         </button>)}
       </aside>
       <div className="editor-center">
-      <ConnectionGuide titleRef={guideTitle} project={project} component={component} pending={pending} message={connectionMessage}
-        onPick={pickPort} onCancel={cancelConnection} onMount={() => mountSelect.current?.focus()} />
-      {catalogOpen && <Suspense fallback={<p>Открываем встроенный каталог…</p>}><CatalogPanel project={project} selected={component} level={level}
-        ctl={ctl} onPlaced={setSelected} /></Suspense>}
-      {sceneFailed && <p className="editor-error" role="alert">3D недоступно. Схема и расчёт сохранены в 2D.</p>}
-      {viewMode === '3d' ? <Suspense fallback={<p>Загружаем 3D…</p>}><Scene project={project} level={level} selected={selected}
-        live={liveScene} onSelect={setSelected} onUnavailable={() => { setSceneFailed(true); setViewMode('2d'); }} /></Suspense> :
-      <Schematic project={project} level={level} selected={selected} onSelect={setSelected} water={water} control={control} overlay={overlay.revision === project.revision ? overlay : undefined} />}
-
-        <SimulationPanel project={project} preset={preset} artifacts={artifacts} onArtifacts={onArtifacts} onLive={viewMode === '3d' ? setLiveScene : undefined} onFocus={(id) => {
-          const focus = project.components.find((c) => c.id === id);
-          if (focus) { setLevel(focus.level); setSelected(id); setOverlay({}); }
-        }} />
+        <SimulationPanel project={project} preset={preset} artifacts={artifacts} onArtifacts={onArtifacts}
+          onLive={viewMode === '3d' ? setLiveScene : undefined} onFocus={(id) => {
+            const focus = project.components.find((c) => c.id === id);
+            if (focus) { setLevel(focus.level); setSelected(id); setOverlay({}); }
+          }}>
+          {viewMode === '2d' && (component || pending || !links.length || showConnections ?
+            <ConnectionGuide titleRef={guideTitle} project={project} component={component} pending={pending} message={connectionMessage}
+              onPick={pickPort} onCancel={cancelConnection} onMount={() => mountSelect.current?.focus()} /> :
+            <div className="connection-compact"><button onClick={() => setShowConnections(true)}>Соединить элементы</button></div>)}
+          {sceneFailed && <p className="editor-error" role="alert">3D недоступно. Схема и расчёт сохранены в 2D.</p>}
+          {viewMode === '3d' ? <Suspense fallback={<p>Загружаем 3D…</p>}><Scene project={project} level={level} selected={selected}
+            live={liveScene} onSelect={setSelected} onUnavailable={() => { setSceneFailed(true); setViewMode('2d'); }} /></Suspense> :
+            <Schematic project={project} level={level} selected={selected} onSelect={setSelected} water={water} control={control}
+              overlay={overlay.revision === project.revision ? overlay : undefined} />}
+        </SimulationPanel>
       </div>
-      <section className="work-panel" aria-label="Монтаж и свойства">
+      <section className="work-panel" aria-label="Монтаж и свойства" hidden={viewMode === '3d' && !sceneInspector}>
         <h2>Монтаж оборудования</h2>
         <form onSubmit={addComponent} className="room-fields mount-fields">
           <label>Учебное оборудование<select ref={mountSelect} value={typeId} onChange={(e) => setTypeId(e.target.value)}>
@@ -197,7 +223,7 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
             <label>Z, м<input name="z" inputMode="decimal" defaultValue={String(nextPosition.z).replace('.', ',')} /></label>
           </div>
           <button type="submit" disabled={project.components.length >= 220}>Установить</button>
-          {component && <button type="button" onClick={() => guideTitle.current?.focus()}>К соединениям</button>}
+          {component && viewMode === '2d' && <button type="button" onClick={() => guideTitle.current?.focus()}>К соединениям</button>}
         </form>
         {room && <><h2>{room.name}</h2><RoomForm room={room} ctl={ctl} /><StartConditions room={room} project={project} ctl={ctl} /></>}
         {component && <><PortInspector project={project} component={component} pending={pending} onPick={(portId) => pickPort({ componentId: component.id, portId })} />

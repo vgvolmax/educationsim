@@ -94,3 +94,6 @@ footer p { margin: .7rem 0; }
   :where(button, select, input, textarea, summary, a):focus-visible, .file-pick:focus-within { outline-color: Highlight; }
   .home-hero, .template-section, .file-pick { border: 1px solid CanvasText; }
 }
+
+button.action-primary:not(:disabled) { background: var(--brand-strong); border-color: var(--brand-strong); color: #fff; }
+button.action-primary:hover:not(:disabled) { background: var(--brand); border-color: var(--brand); }
