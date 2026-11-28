@@ -71,6 +71,7 @@ test('route worker previews in the schematic without silently replacing a manual
   await open(page);
   await page.getByText('Трассировка петли', { exact: true }).click();
   await page.getByLabel('Связь петли').selectOption('pipe-a');
+  await page.getByRole('button', { name: 'Ввести координаты' }).click();
   await page.getByLabel('Точки X Z, м').fill('0,2 0,2\n5 0,2\n5 0,35\n0,2 0,35');
   await page.getByRole('button', { name: 'Предпросмотр трассы' }).click();
   await expect(page.getByText(/Длина черновика:/)).toBeVisible();
@@ -89,6 +90,7 @@ test('automatic layout uses wall entries and a stale preview cannot overwrite ne
   await open(page, 'Одиночная петля с RTL');
   await page.getByText('Трассировка петли', { exact: true }).click();
   await page.getByRole('combobox', { name: 'Укладка', exact: true }).selectOption('serpentine');
+  await page.getByRole('button', { name: 'Ввести координаты' }).click();
   await page.getByLabel('Вход и выход на одной стене, X Z, м').fill('0 0,15\n0 0,3');
   await page.getByRole('button', { name: 'Предпросмотр трассы' }).click();
   await expect(page.locator('[data-route-preview]')).toHaveCount(1);
@@ -96,4 +98,58 @@ test('automatic layout uses wall entries and a stale preview cannot overwrite ne
   await expect(page.locator('[data-route-preview]')).toHaveCount(0);
   await expect(page.getByText('Предпросмотр устарел. Запросите новый.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Принять трассу' })).toHaveCount(0);
+});
+
+async function clickFloor(page: Page, x: number, z: number) {
+  const plan = page.getByRole('img', { name: 'Схема этажа' });
+  await plan.scrollIntoViewIfNeeded();
+  const point = await plan.evaluate((el, { x, z }) => {
+    const screen = new DOMPoint(x, z).matrixTransform((el as unknown as SVGSVGElement).getScreenCTM()!);
+    return { x: screen.x, y: screen.y };
+  }, { x, z });
+  await page.mouse.move(point.x, point.y);
+  await expect(page.locator('[data-floor-cursor]:not(.invalid)')).toHaveCount(1);
+  await page.mouse.click(point.x, point.y);
+}
+
+test('draws a snapped floor loop from a free manifold pair and commits both in one edit', async ({ page }) => {
+  await open(page, 'Новый проект');
+  await page.getByRole('button', { name: 'Добавить комнату' }).click();
+  await page.getByLabel('Учебное оборудование').selectOption('training-manifold-two-way');
+  await page.getByRole('button', { name: 'Установить', exact: true }).click();
+  await page.getByText('Трассировка петли', { exact: true }).click();
+  await expect(page.getByLabel('Связь петли').locator('option:checked')).toContainText('Петля 1');
+  await page.getByLabel('Шаг, мм', { exact: true }).fill('200');
+  await page.getByRole('button', { name: 'Рисовать трубу на плане' }).click();
+  await clickFloor(page, .41, 1.02);
+  await clickFloor(page, 4.42, 1.06);
+  await clickFloor(page, 4.37, 1.23);
+  await clickFloor(page, .39, 1.22);
+  const draft = page.locator('[data-floor-draft]');
+  const points = await draft.evaluate((el) => Array.from((el as unknown as SVGPolylineElement).points,
+    ({ x, y }) => [Number(x.toFixed(2)), Number(y.toFixed(2))]));
+  expect(points).toEqual([[.4, 1], [4.4, 1], [4.4, 1.2], [.4, 1.2]]);
+  await page.getByRole('button', { name: 'Убрать точку' }).click();
+  await expect(draft).toHaveAttribute('points', /^0\.4,1 4\.4,1 4\.4,1\.2\S*$/);
+  await clickFloor(page, .39, 1.22);
+  await page.getByRole('button', { name: 'Предпросмотр трассы' }).click();
+  await expect(page.locator('[data-route-preview]')).toHaveCount(1);
+  await expect(page.locator('[data-link]')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Принять трассу' }).click();
+  await expect(page.getByText('Редакция 3', { exact: true })).toBeVisible();
+  await expect(page.locator('[data-link^="pipe-"]:not(.approximate)')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Отменить', exact: true }).click();
+  await expect(page.locator('[data-link]')).toHaveCount(0);
+});
+
+test('automatic serpentine uses two snapped entries on the selected wall', async ({ page }) => {
+  await open(page, 'Одиночная петля с RTL');
+  await page.getByText('Трассировка петли', { exact: true }).click();
+  await page.getByRole('combobox', { name: 'Укладка', exact: true }).selectOption('serpentine');
+  await page.getByRole('button', { name: 'Отметить вход и выход на плане' }).click();
+  await clickFloor(page, .04, .17);
+  await clickFloor(page, .10, .34);
+  await expect(page.locator('[data-floor-draft]')).toHaveAttribute('points', '0,0.15 0,0.3');
+  await page.getByRole('button', { name: 'Предпросмотр трассы' }).click();
+  await expect(page.locator('[data-route-preview]')).toHaveCount(1);
 });

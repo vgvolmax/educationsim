@@ -14,7 +14,7 @@ const confirmedTeachingRoles = new Map<string, string>([
   ['Поворотный магнитный шламоуловитель', 'training-magnetic-separator'],
   ['Поворотный сепаратор воздуха', 'training-air-separator'],
   ['Предохранительный клапан 1,5 бар', 'training-relief-valve'],
-  ['Насосно-смесительный узел ICMA M054', 'training-pump-mixing-group'],
+  ['Насосно-смесительный узел ICMA M054', 'training-passive-mixing-group'],
   ['Многослойная труба GAPPO Stabil', 'training-pipe-20'],
   ['Труба PE-Xa/EVOH 16×2 мм', 'training-loop-pipe'],
   ['Переходник STOUT', 'training-adapter-16-20'],
@@ -29,7 +29,7 @@ const confirmedTeachingRoles = new Map<string, string>([
 ]);
 const knownArticles = new Map<string, string>([
   ['29352', 'training-eurocone'], ['39511', 'training-end-block'],
-  ['39798', 'training-pump-mixing-group'], ['ZRS25/6G-130 Pro', 'training-circulator'],
+  ['39798', 'training-passive-mixing-group'], ['ZRS25/6G-130 Pro', 'training-circulator'],
 ]);
 const parser = (text: string) => {
   const result = parseCatalogCsv(text);
