@@ -3,7 +3,7 @@ import * as T from 'three';
 import { cube, cyl, electronicsDetail, inlineDetail, mat, paint, pressureDetail } from './equipment-details';
 import { floorDetail } from './floor-details';
 
-type Equipment = { id: string; position: { x: number; y: number; z: number }; family: string; variant: string; outlets?: number };
+type Equipment = { id: string; position: { x: number; y: number; z: number }; family: string; variant: string; outlets?: number; quarterTurns?: number };
 
 export function createEquipment(equipment: Equipment) {
   const { family, variant } = equipment;
@@ -123,6 +123,16 @@ export function createEquipment(equipment: Equipment) {
   } else if (family === 'measurement-radiators' && variant === 'radiator') {
     for (let i = 0; i < 9; i++) add(cube(.054, .4, .1, paint.light), (i - 4) * .058, .21);
     pipe(.032, .54);
+  } else if (variant === 'radiator-angle-valve' || variant === 'radiator-straight-valve') {
+    const angle = variant === 'radiator-angle-valve';
+    add(cyl(.059, angle ? .2 : .4, paint.dark), angle ? -.083 : 0, .125, 0, Math.PI / 2);
+    add(hex(.077, .062, paint.steel), -.192, .125, 0, Math.PI / 2);
+    if (angle) {
+      add(cyl(.059, .15, paint.dark), 0, .088);
+      add(hex(.076, .044, paint.steel), 0, .035);
+    } else add(hex(.077, .062, paint.steel), .192, .125, 0, Math.PI / 2);
+    add(cyl(.08, .045, paint.steel), 0, .19);
+    add(cyl(.039, .075, paint.brass), 0, .23);
   } else if (['balancing', 'isolation', 'directional', 'filtration', 'service', 'measurement-radiators'].includes(family)) {
     pipe();
     inlineDetail(add, variant);
@@ -142,6 +152,7 @@ export function createEquipment(equipment: Equipment) {
   } else if (family === 'floor-installation' || family === 'floor-build-up') {
     floorDetail(add, variant);
   } else pipe();
+  group.rotation.y = (equipment.quarterTurns ?? 0) * Math.PI / 2;
   group.position.set(equipment.position.x, equipment.position.y, equipment.position.z);
   group.traverse((obj) => { obj.userData.componentId = equipment.id; });
   return group;

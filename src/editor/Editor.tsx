@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, FormEvent, KeyboardEvent, ReactNode, SetStateAction } from 'react';
 import { rectangleOf } from '../project/editor-geometry';
 import { equipmentRegistry, trainingRegistry } from '../project/registry';
-import type { PortEndpoint, ProjectDocument, Room } from '../project/types';
+import type { Point2, PortEndpoint, ProjectDocument, Room } from '../project/types';
 import { parseRussianDecimal } from '../project/units';
 import { Inspector, StartConditions } from './Inspector';
 import { SimulationPanel } from './SimulationPanel';
@@ -16,11 +16,21 @@ import type { SceneLive } from '../views/scene/Scene';
 import { Schematic } from '../views/schematic/Schematic';
 import { editorId } from './useProject';
 import type { ProjectController } from './useProject';
+import { hasAuthoredTraces } from '../project/reducer';
+import { snapToGrid } from './placement';
+import type { Placement } from './placement';
 import type { ProjectArtifacts } from '../storage/project-transfer';
 import './editor.css';
 
 const CatalogPanel = lazy(async () => ({ default: (await import('../catalog/CatalogPanel')).CatalogPanel }));
 const Scene = lazy(async () => ({ default: (await import('../views/scene/Scene')).Scene }));
+const commonParts = [
+  { id: 'training-heat-source', name: 'Котёл' },
+  { id: 'training-manifold-two-way', name: 'Коллектор' },
+  { id: 'training-circulator', name: 'Насос' },
+  { id: 'training-coupling', name: 'Муфта' },
+  { id: 'training-radiator-angle-valve', name: 'Угловой клапан' },
+];
 
 function RoomForm({ room, ctl }: { room: Room; ctl: ProjectController }) {
   const dims = rectangleOf(room);
@@ -41,6 +51,9 @@ function RoomForm({ room, ctl }: { room: Room; ctl: ProjectController }) {
 export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, files, fileStatus, fileAttention }: { ctl: ProjectController; project: ProjectDocument; preset?: TemplateId;
   artifacts: ProjectArtifacts; onArtifacts: Dispatch<SetStateAction<ProjectArtifacts>>; onHome(): void; files?: ReactNode; fileStatus?: ReactNode; fileAttention?: boolean }) {
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [placement, setPlacement] = useState<Placement | null>(null);
+  const [placementMessage, setPlacementMessage] = useState('');
+  const [partsOpen, setPartsOpen] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [sceneInspector, setSceneInspector] = useState(false);
   const [showConnections, setShowConnections] = useState(false);
@@ -86,9 +99,61 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
     setCatalogOpen(false);
     catalogTrigger.current?.focus();
   }
+  const moving = placement?.movingId !== undefined;
+  const routed = Boolean(component && hasAuthoredTraces(project, component.id));
+
+  function pickPart(part: Placement) {
+    cancelConnection();
+    setCatalogOpen(false);
+    setPartsOpen(false);
+    setPlacementMessage('');
+    if (viewMode !== '3d') setSceneFailed(false);
+    setViewMode('3d');
+    setPlacement(part);
+  }
+
+  function rotatePart() {
+    setPlacement((current) => current && { ...current, quarterTurns: (current.quarterTurns + 1) % 4 });
+  }
+
+  function moveRequest(id: string) {
+    const item = components.find((candidate) => candidate.id === id);
+    return item && !hasAuthoredTraces(project, id) ?
+      { typeId: item.typeId, movingId: id, quarterTurns: item.quarterTurns ?? 0 } : null;
+  }
+
+  function place(point: Point2, part = placement) {
+    if (!part) return;
+    const original = part.movingId && project.components.find(({ id }) => id === part.movingId);
+    if (part.movingId && !original) return;
+    const position = { x: snapToGrid(point.x), y: original ? original.position.y : 3 * level, z: snapToGrid(point.z) };
+    if (components.some((item) => item.id !== part.movingId &&
+        Math.hypot(item.position.x - position.x, item.position.z - position.z) < .22)) {
+      setPlacementMessage('Место занято. Выберите другую точку.');
+      return;
+    }
+    const profile = trainingRegistry.get(part.typeId);
+    if (!profile) return;
+    const id = part.movingId ?? editorId(part.snapshot ? 'catalog' : 'mount');
+    const installed = original ? ctl.apply({ kind: 'move_component', commandId: editorId('move'), componentId: id,
+      position, quarterTurns: part.quarterTurns }) : ctl.apply({ kind: 'add_component', commandId: editorId('install'),
+      component: { id, level, typeId: profile.id, position, quarterTurns: part.quarterTurns, roomId: null,
+        parameters: { ...profile.defaultParameters }, catalogSnapshotId: part.snapshot?.id ?? null },
+      catalogSnapshot: part.snapshot });
+    if (installed) {
+      setSelected(id);
+      setPlacement(null);
+      setPlacementMessage(original ? 'Деталь перемещена.' : 'Деталь установлена.');
+    }
+  }
+
   function cancelConnection() { setPending(null); setConnectionMessage(''); }
   function keyEdit(e: KeyboardEvent) {
-    if (e.key === 'Escape') { cancelConnection(); return; }
+    if (e.key === 'Escape') { setPlacement(null); setPlacementMessage(''); cancelConnection(); return; }
+    if (placement && e.code === 'KeyR' && !e.ctrlKey && !e.metaKey && !e.repeat &&
+        !(e.target instanceof HTMLElement && e.target.closest('input, textarea, select'))) {
+      e.preventDefault(); rotatePart(); return;
+    }
     if (!(e.ctrlKey || e.metaKey) || e.altKey || (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable="true"]'))) return;
     const key = e.key.toLowerCase();
     if (key === 'z' || key === 'y') {
@@ -104,6 +169,7 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
   }
   function addComponent(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (viewMode === '3d') { pickPart({ typeId, quarterTurns: 0 }); return; }
     const type = trainingRegistry.get(typeId);
     if (!type) return;
     const data = new FormData(e.currentTarget);
@@ -138,19 +204,19 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
         equipmentLabel(destination) + ' · ' + (endPort ? portLabel(endPort) : next.portId) + '.');
     }
   }
-  return <main className="editor" onKeyDown={keyEdit}>
+  return <main className={'editor' + (placement ? ' is-placing' : '')} onKeyDown={keyEdit}>
     <header className="work-header">
       <button onClick={onHome}>← Старт</button>
       <div><p className="eyebrow">Волмакс / конструктор</p><h1 tabIndex={-1}>{project.title}</h1></div>
       <span className="revision">Редакция {project.revision}</span>
     </header>
     <div className="work-toolbar" aria-label="Инструменты схемы">
-      <div className="toolbar-group" role="group" aria-label="План этажа"><label>Этаж <select value={level} onChange={(e) => { setLevel(Number(e.target.value)); setSelected(null); setOverlay({}); }}>
+      <div className="toolbar-group" role="group" aria-label="План этажа"><label>Этаж <select value={level} onChange={(e) => { setLevel(Number(e.target.value)); setPlacement(null); setSelected(null); setOverlay({}); }}>
         {[0, 1, 2].map((n) => <option key={n} value={n}>{n + 1}</option>)}
       </select></label>
       <button onClick={addRoom} disabled={project.rooms.length >= 12}>Добавить комнату</button></div>
-      <div className="toolbar-group" role="group" aria-label="История правок"><button disabled={!ctl.history?.past.length} onClick={() => { cancelConnection(); ctl.changeHistory('undo'); }}>Отменить</button>
-      <button disabled={!ctl.history?.future.length} onClick={() => { cancelConnection(); ctl.changeHistory('redo'); }}>Повторить</button></div>
+      <div className="toolbar-group" role="group" aria-label="История правок"><button disabled={!ctl.history?.past.length} onClick={() => { setPlacement(null); cancelConnection(); ctl.changeHistory('undo'); }}>Отменить</button>
+      <button disabled={!ctl.history?.future.length} onClick={() => { setPlacement(null); cancelConnection(); ctl.changeHistory('redo'); }}>Повторить</button></div>
       <div className="toolbar-group view-group" role="group" aria-label="Вид проекта">
       <button ref={catalogTrigger} aria-expanded={catalogOpen} aria-controls={catalogOpen ? 'editor-catalog' : undefined}
         onClick={() => catalogOpen ? closeCatalog() : setCatalogOpen(true)}>Каталог ВОЛМАКС</button>
@@ -181,10 +247,22 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
       if (event.key === 'Escape') { event.stopPropagation(); closeCatalog(); }
     }}>
       <div className="catalog-close"><button ref={catalogClose} onClick={closeCatalog}>Закрыть каталог</button></div>
-      <Suspense fallback={<p>Открываем встроенный каталог…</p>}><CatalogPanel project={project} selected={component} level={level}
+      <Suspense fallback={<p>Открываем встроенный каталог…</p>}><CatalogPanel project={project} selected={component} onPlace={pickPart}
         ctl={ctl} onPlaced={(id) => { setSelected(id); closeCatalog(); }} /></Suspense>
     </aside>}
-    <div className={'work-body' + (viewMode === '3d' && !sceneInspector ? ' wide-scene' : '')}>
+    <section className="part-palette" aria-label="Палитра деталей">
+      <strong>Детали</strong>
+      {commonParts.map((item) => <button key={item.id} disabled={project.components.length >= 220}
+        aria-pressed={placement?.typeId === item.id && !moving} onClick={() => pickPart({ typeId: item.id, quarterTurns: 0 })}>{item.name}</button>)}
+      <button aria-expanded={partsOpen} onClick={() => setPartsOpen((open) => !open)}>Все детали</button>
+      {partsOpen && <form onSubmit={(e) => { e.preventDefault(); pickPart({ typeId, quarterTurns: 0 }); }} className="part-palette-picker">
+        <label>Тип детали<select value={typeId} onChange={(event) => setTypeId(event.target.value)}>
+          {[...equipmentRegistry.values()].map((profile) => <option key={profile.id} value={profile.id}>{profile.titleRu}</option>)}
+        </select></label>
+        <button className="action-primary" type="submit" disabled={project.components.length >= 220}>Взять деталь</button>
+      </form>}
+    </section>
+    <div className={'work-body'  + (viewMode === '3d' && !sceneInspector ? ' wide-scene' : '')}>
       <aside className="work-tree" aria-label="Объекты этажа">
         <h2>Комнаты</h2>
         {!rooms.length && <p>Нет комнат</p>}
@@ -205,10 +283,28 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
             <ConnectionGuide titleRef={guideTitle} project={project} component={component} pending={pending} message={connectionMessage}
               onPick={pickPort} onCancel={cancelConnection} onMount={() => mountSelect.current?.focus()} /> :
             <div className="connection-compact"><button onClick={() => setShowConnections(true)}>Соединить элементы</button></div>)}
+          {viewMode === '3d' && !placement && component && <div className="scene-context">
+            <button disabled={routed} title={routed ? 'У детали есть проложенные трубы.' : undefined}
+              onClick={() => pickPart({ typeId: component.typeId, movingId: component.id, quarterTurns: component.quarterTurns ?? 0 })}>Переместить деталь</button>
+            <button aria-expanded={showConnections} onClick={() => setShowConnections((open) => !open)}>Подключения</button>
+          </div>}
+          {viewMode === '3d' && showConnections && !placement &&
+            <ConnectionGuide titleRef={guideTitle} project={project} component={component} pending={pending} message={connectionMessage}
+              onPick={pickPort} onCancel={cancelConnection} onMount={() => setPartsOpen(true)} />}
+          {placement && <section className="placement-strip" aria-label="Размещение детали">
+            <div><strong>{(moving ? 'Перемещаем: ' : 'В руке: ') + (equipmentRegistry.get(placement.typeId)?.titleRu ?? placement.typeId)}</strong>
+              <p>Наведите на сетку и щёлкните по месту установки.</p></div>
+            <div className="placement-actions">
+              <button onClick={rotatePart}>Повернуть на 90° (R)</button>
+              <button onClick={() => { setPlacement(null); setPlacementMessage(''); }}>Отмена (Esc)</button>
+            </div>
+            {viewMode === '2d' && <button onClick={() => place(nextPosition)}>Поставить в свободную точку</button>}
+          </section>}
+          {placementMessage && <p className="placement-status" role="status">{placementMessage}</p>}
           {sceneFailed && <p className="editor-error" role="alert">3D недоступно. Схема и расчёт сохранены в 2D.</p>}
           {viewMode === '3d' ? <Suspense fallback={<p>Загружаем 3D…</p>}><Scene project={project} level={level} selected={selected}
-            live={liveScene} onSelect={setSelected} onUnavailable={() => { setSceneFailed(true); setViewMode('2d'); }} /></Suspense> :
-            <Schematic project={project} level={level} selected={selected} onSelect={setSelected} water={water} control={control}
+            live={liveScene} placement={placement} onPlace={place} onDrag={moveRequest} onSelect={setSelected} onUnavailable={() => { setSceneFailed(true); setViewMode('2d'); }} /></Suspense> :
+            <Schematic project={project} level={level} selected={selected} onSelect={setSelected} onPlace={placement ? place : undefined} water={water} control={control}
               overlay={overlay.revision === project.revision ? overlay : undefined} />}
         </SimulationPanel>
       </div>
@@ -218,11 +314,11 @@ export function Editor({ ctl, project, preset, artifacts, onArtifacts, onHome, f
           <label>Учебное оборудование<select ref={mountSelect} value={typeId} onChange={(e) => setTypeId(e.target.value)}>
             {[...equipmentRegistry.values()].map((d) => <option key={d.id} value={d.id}>{d.titleRu}</option>)}
           </select></label>
-          <div className="mount-coordinates" key={level + ':' + placementKey}>
+          {viewMode === '2d' && <div className="mount-coordinates" key={level + ':' + placementKey}>
             <label>X, м<input name="x" inputMode="decimal" defaultValue={String(nextPosition.x).replace('.', ',')} /></label>
             <label>Z, м<input name="z" inputMode="decimal" defaultValue={String(nextPosition.z).replace('.', ',')} /></label>
-          </div>
-          <button type="submit" disabled={project.components.length >= 220}>Установить</button>
+          </div>}
+          <button type="submit" disabled={project.components.length >= 220}>{viewMode === '3d' ? 'Взять для размещения' : 'Установить'}</button>
           {component && viewMode === '2d' && <button type="button" onClick={() => guideTitle.current?.focus()}>К соединениям</button>}
         </form>
         {room && <><h2>{room.name}</h2><RoomForm room={room} ctl={ctl} /><StartConditions room={room} project={project} ctl={ctl} /></>}

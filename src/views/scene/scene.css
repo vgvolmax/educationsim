@@ -21,3 +21,8 @@
 .scene-options label { font-size: .88rem; }
 .scene-cutaway { box-shadow: var(--lift); }
 .cutaway-path { border-radius: .55rem; }
+
+.scene-area .scene-building, .scene-area .scene-building:active { cursor: crosshair; }
+.scene-area .scene-building[data-placement=occupied] { cursor: not-allowed; }
+.scene-area .scene-occupied { display: none; padding: .25rem .5rem; background: var(--warn-bg); color: var(--warn-ink); }
+.scene-area canvas[data-placement=occupied] + .scene-occupied { display: block; }

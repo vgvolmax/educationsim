@@ -19,6 +19,10 @@ export const controls: EquipmentSpec[] = [
     .map(([variant, titleRu]): EquipmentSpec => ({ family: 'balancing', variant, titleRu, shape: passive(),
       model: 'valve:balance', settings: { position, lossK, ...(variant === 'flowmeter' ? { flowLimitM3s: limit } : {}) },
       readings: ['flow', 'pressure', 'opening'], installation: 'Соблюдать направление и сверять расход в рабочем режиме насоса.' })),
+  ...([['radiator-angle-valve', 'Угловой радиаторный клапан'], ['radiator-straight-valve', 'Прямой радиаторный клапан']] as const)
+    .map(([variant, titleRu]): EquipmentSpec => ({ family: 'balancing', variant, titleRu, shape: passive(),
+      model: 'valve:balance', settings: { position, lossK }, readings: ['flow', 'pressure', 'opening'],
+      installation: 'Радиаторная ветвь. Открытие задаётся вручную. Присоединения и ход термоголовки конкретного артикула сверяйте по паспорту.' })),
   ...([['ball-valve', 'Шаровой кран'], ['loop-valve', 'Запорный клапан петли'], ['motor-zone-valve', 'Зональный клапан с приводом']] as const)
     .map(([variant, titleRu]): EquipmentSpec => ({ family: 'isolation', variant, titleRu,
       shape: passive('passive', variant === 'motor-zone-valve' ? [signal('command', 'input', 'actuator')] : []),

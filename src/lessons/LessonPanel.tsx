@@ -5,7 +5,7 @@ import { createSimulationClient } from '../worker/client';
 import type { Lesson, LessonAction, LessonCase, LessonCriterion, LessonMetric, PreparedLesson } from './authoring';
 import { admittedAction, applyLessonAction, freeCopy, gradeLesson, observe, startLessonState, stepTicks } from './lesson';
 import type { LessonState } from './lesson';
-import { FirstLessonGuide } from './FirstLessonGuide';
+import { FirstLessonGuide, FirstLessonProgress } from './FirstLessonGuide';
 import { answerGroups, LessonBasket, LessonQuestions, LessonResponses } from './LessonAssessment';
 import { listAttempts, saveAttempt } from './progress';
 import type { LessonAttempt } from './progress';
@@ -28,7 +28,6 @@ const measurementNames: Record<LessonMetric, string> = {
   flow: 'Расход', pressure: 'Давление', opening: 'Открытие', power: 'Мощность',
   roomTemperature: 'Температура воздуха', waterTemperature: 'Температура воды', surfaceTemperature: 'Температура поверхности',
 };
-const firstLinks = { supply: 'Подача', 'pipe-a': 'Петля пола', return: 'Обратка' };
 
 function measurementLabel(rule: Extract<LessonCriterion, { type: 'range' }>, selectedCase: LessonCase) {
   const project = selectedCase.project;
@@ -129,6 +128,7 @@ export function LessonPanel({ lesson, introductory, bundled, onBack, onNext, onE
   const grade = gradeLesson(lesson, state, views);
   const completed = grade.passed && !assessed;
   const flow = introductory ? observe(view, 'flow', 'link:pipe-a') : null;
+  const visited = new Set(state.actions.map(({ actionId }) => actionId));
   const actions = definition.actions.filter((action) => !action.forCase || action.forCase === state.caseId);
   const primaryAction = actions.find((action) => action.type === 'step');
   const groups = answerGroups(actions);
@@ -232,8 +232,8 @@ export function LessonPanel({ lesson, introductory, bundled, onBack, onNext, onE
     const isSelected = action.type === 'answer' ? state.answers[action.field] === action.value :
       action.type === 'inspect' ? highlight === action.target : action.type === 'case' ? state.caseId === action.caseId : undefined;
     return <button key={action.id} className={action === primaryAction ? 'action-primary' : undefined}
-      onClick={() => perform(action.id)} aria-pressed={isSelected} data-line={introductory && action.type === 'inspect' ? action.target : undefined}
-      disabled={working || motor && (!ready || atTarget) || introductory && action.type === 'inspect' && flow === null}>
+      onClick={() => perform(action.id)} aria-pressed={isSelected}
+      disabled={working || motor && (!ready || atTarget)}>
       {atTarget ? 'Замер на тике ' + view?.snapshot.tick + ' готов' : action.label}
     </button>;
   }
@@ -341,11 +341,11 @@ export function LessonPanel({ lesson, introductory, bundled, onBack, onNext, onE
       <div className={'lesson-grid' + (assessed ? ' assessed' : '')}>
         <div className="lesson-main">
           <section className="lesson-work" aria-label="Схема урока">
-            <div className="lesson-case"><h2>{bound.definition.title}</h2><div className="lesson-primary">
+            {!introductory && <div className="lesson-case"><h2>{bound.definition.title}</h2><div className="lesson-primary">
               {view && <span title="Тик — один шаг модели">Модельный тик: {view.snapshot.tick}</span>}
               {!view && !workerIssue && <span>Готовим учебную схему…</span>}
-              {primaryAction && (!introductory || !completed) && renderAction(primaryAction)}
-            </div></div>
+              {primaryAction && renderAction(primaryAction)}
+            </div></div>}
             {definition.sourceCard && assessed && <p className="lesson-measurement-note">Стенд нужен для замера расхода в контрольном контуре.</p>}
             <div className="lesson-status">
               {warning}
@@ -354,16 +354,17 @@ export function LessonPanel({ lesson, introductory, bundled, onBack, onNext, onE
                 workerIssue && <p className="lesson-warning" role="alert">{client?.state.diagnostics.map(({ message }) => message).join(' ') ||
                   'Расчёт остановлен. Сбросьте попытку или выберите другой стенд.'}</p>}
             </div>
-            {introductory && <FirstLessonGuide flow={flow} passed={completed}
-              nextAction={completed && <>{nextAction}{freeCopyAction}</>} />}
-            {assessmentActions.length > 0 && <div className="lesson-actions" aria-label="Разрешённые действия">{assessmentActions.map(renderAction)}</div>}
-            {introductory && <p className="lesson-node-key"><strong>1</strong> Котёл <strong>2</strong> Коллектор
-              {highlight && <span role="status">На схеме выделено: {firstLinks[highlight as keyof typeof firstLinks]}</span>}</p>}
-            {assessed ? <details className="lesson-diagram"><summary>Схема контрольного стенда</summary>
-              <Schematic project={bound.project} level={bound.project.viewPreferences.level} selected={highlight}
-                selectedLink={highlight} onSelect={inspect} onLinkSelect={inspect} water control />
-            </details> : <Schematic project={bound.project} level={bound.project.viewPreferences.level} selected={highlight}
-              selectedLink={highlight} lessonLinks={introductory ? firstLinks : undefined} onSelect={inspect} onLinkSelect={inspect} water control />}
+            {introductory ? <FirstLessonGuide flow={flow} visited={visited} selected={highlight} passed={completed}
+              canStart={Boolean(primaryAction && ready)} pending={Boolean(client?.pending && view)}
+              blocked={working} onStart={() => { if (primaryAction) perform(primaryAction.id); }}
+              onInspect={inspect} nextAction={<>{nextAction}{freeCopyAction}</>} /> : <>
+              {assessmentActions.length > 0 && <div className="lesson-actions" aria-label="Разрешённые действия">{assessmentActions.map(renderAction)}</div>}
+              {assessed ? <details className="lesson-diagram"><summary>Схема контрольного стенда</summary>
+                <Schematic project={bound.project} level={bound.project.viewPreferences.level} selected={highlight}
+                  selectedLink={highlight} onSelect={inspect} onLinkSelect={inspect} water control />
+              </details> : <Schematic project={bound.project} level={bound.project.viewPreferences.level} selected={highlight}
+                selectedLink={highlight} onSelect={inspect} onLinkSelect={inspect} water control />}
+            </>}
           </section>
           {assessed && <>
             {definition.sourceCard && <Suspense fallback={<p>Загружаем снимок карточки…</p>}><LessonSource card={definition.sourceCard} /></Suspense>}
@@ -371,7 +372,9 @@ export function LessonPanel({ lesson, introductory, bundled, onBack, onNext, onE
             <LessonQuestions lesson={definition} groups={groups} state={state} onAction={perform} disabled={working} />
           </>}
         </div>
-        <aside className="lesson-rubric" aria-label={assessed ? 'Измерения и готовность' : 'Проверка задания'}>
+        {introductory ? <aside className="lesson-rubric first-lesson-rubric" aria-label="Прогресс первого урока">
+          <FirstLessonProgress flow={flow} visited={visited} />
+        </aside> : <aside className="lesson-rubric" aria-label={assessed ? 'Измерения и готовность' : 'Проверка задания'}>
           <h2>{assessed ? 'Измерения' : 'Проверка задания'}</h2>
           {assessed ? <>
             <ul className="criteria-list">{grade.rows.flatMap((row, i) => {
@@ -387,14 +390,12 @@ export function LessonPanel({ lesson, introductory, bundled, onBack, onNext, onE
             <Criteria lesson={definition} grade={grade} showTargets={definition.id === 'L02'} />
             {!completed && definition.hints.length > 0 && <div className="lesson-hint">
               {hint > 0 && <><strong>Подсказка</strong>
-                {introductory && flow !== null ?
-                  <p>Подача соединяет котёл с коллектором. Обратка ведёт от коллектора к котлу. Найдите оба коротких участка рядом с узлами 1 и 2.</p> :
-                  definition.hints.slice(0, hint).map((text) => <p key={text}>{text}</p>)}</>}
+                {definition.hints.slice(0, hint).map((text) => <p key={text}>{text}</p>)}</>}
               {hint < definition.hints.length && <button onClick={() => setHint((n) => n + 1)}>{hint ? 'Ещё подсказка' : 'Показать подсказку'}</button>}
             </div>}
             {completed && <section className="lesson-explanation"><h3>Что показал опыт</h3><p>{definition.explanation}</p></section>}
           </>}
-        </aside>
+        </aside>}
       </div>
       {exportNotice}
       <div className="lesson-actions lesson-footer">

@@ -31,3 +31,21 @@
 .catalog-caution { border-radius: .55rem; color: var(--warn-ink); }
 .catalog-tools .file-pick { display: inline-flex; }
 .catalog-tools .file-pick input { inline-size: 1px; }
+
+.catalog-panel .catalog-release { font-size: .78rem; color: var(--muted); }
+.catalog-index button { flex: 0 0 auto; min-height: 3.7rem; padding: .5rem .7rem; }
+.catalog-index button strong, .catalog-index button span { display: block; line-height: 1.33; }
+.catalog-index button span { margin-top: .18rem; }
+.catalog-detail { padding: .72rem; }
+.catalog-detail h3 { margin: .25rem 0 .5rem; }
+.catalog-identity { display: flex; gap: .3rem .7rem; flex-wrap: wrap; color: var(--muted); font-size: .82rem; font-weight: 650; }
+.catalog-model { margin: .4rem 0 .65rem; overflow: hidden; border: 1px solid var(--edge); border-radius: .7rem; background: var(--paper); }
+.catalog-model canvas { display: block; width: 100%; height: clamp(8rem, 24vh, 13rem); touch-action: none; cursor: grab; }
+.catalog-model canvas:active { cursor: grabbing; }
+.catalog-model figcaption { display: flex; flex-wrap: wrap; gap: .2rem .65rem; justify-content: space-between;
+  padding: .34rem .5rem; color: var(--muted); font-size: .76rem; }
+.catalog-model > p { padding: .6rem; }
+.catalog-facts, .catalog-card-source { margin-top: .55rem; padding-top: .45rem; border-top: 1px solid var(--edge); }
+.catalog-facts h4 { margin-top: 0; }
+.catalog-card-source summary { cursor: pointer; color: var(--brand-strong); font-weight: 650; }
+.catalog-detail .catalog-assistance { margin-block: .65rem; color: var(--muted); font-size: .88rem; }

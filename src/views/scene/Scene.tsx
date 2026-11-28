@@ -7,42 +7,57 @@ import { sceneHeat } from './heatMap';
 import { CutawayDiagram } from './CutawayDiagram';
 import { createSceneRenderer } from './renderScene';
 import { numberRu } from '../measurements/RunReadings';
-import type { ProjectDocument } from '../../project/types';
+import type { Placement } from '../../editor/placement';
+import type { Point2, ProjectDocument } from '../../project/types';
 import type { SessionView } from '../../simulation/session';
 import type { CompiledSystem } from '../../simulation/types';
 import './scene.css';
 
 export type SceneLive = { frame: SessionView; system: CompiledSystem; valves: Readonly<Record<string, number>>; setValve(id: string, opening: number): void };
 type Props = { project: ProjectDocument; level: number; selected: string | null; live: SceneLive | null;
-  onSelect(id: string): void; onUnavailable(): void };
+  placement: Placement | null; onSelect(id: string): void; onUnavailable(): void; onPlace(point: Point2, part?: Placement): void; onDrag(id: string): Placement | null };
 
-export function Scene({ project, level, selected, live, onSelect, onUnavailable }: Props) {
+export function Scene({ project, level, selected, live, placement, onSelect, onUnavailable, onPlace, onDrag }: Props) {
   const node = useRef<HTMLCanvasElement>(null);
   const adapter = useRef<ReturnType<typeof createSceneRenderer> | null>(null);
+  type CameraPose = ReturnType<NonNullable<typeof adapter.current>['cameraPose']>;
+  const lastCamera = useRef<{ key: string; pose: CameraPose } | null>(null);
   const [transparent, setTransparent] = useState(true);
   const [heat, setHeat] = useState(false);
   const [section, setSection] = useState(false);
   const [cut, setCut] = useState(false);
   const [still, setStill] = useState(() => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
-  const callbacks = useRef({ onSelect, onUnavailable });
-  callbacks.current = { onSelect, onUnavailable };
+  const callbacks = useRef({ onSelect, onUnavailable, onPlace, onDrag });
+  callbacks.current = { onSelect, onUnavailable, onPlace, onDrag };
   const frame = live?.system.projectRevision === project.revision && live.system.projectId === project.projectId ? live.frame : null;
-  const flags = useRef({ selected, transparent, heat, section, still, frame });
-  flags.current = { selected, transparent, heat, section, still, frame };
+  const flags = useRef({ selected, transparent, heat, section, still, frame, placement });
+  flags.current = { selected, transparent, heat, section, still, frame, placement };
   useEffect(() => {
     const canvas = node.current;
     if (!canvas) return;
     const loss = (e: Event) => { e.preventDefault(); callbacks.current.onUnavailable(); };
     canvas.addEventListener('webglcontextlost', loss);
+    const key = project.projectId + ':' + level;
     try {
-      adapter.current = createSceneRenderer(canvas, sceneInput(project, level), project, () => flags.current, (id) => callbacks.current.onSelect(id));
+      adapter.current = createSceneRenderer(canvas, sceneInput(project, level), project, () => flags.current,
+        (id) => callbacks.current.onSelect(id), (point, part) => callbacks.current.onPlace(point, part), (id) => callbacks.current.onDrag(id));
+      if (lastCamera.current?.key === key) adapter.current.restoreCamera(lastCamera.current.pose);
     } catch {
       callbacks.current.onUnavailable();
     }
     return () => {
-      canvas.removeEventListener('webglcontextlost', loss); adapter.current?.dispose(); adapter.current = null;
+      canvas.removeEventListener('webglcontextlost', loss);
+      if (adapter.current) {
+        lastCamera.current = { key, pose: adapter.current.cameraPose() };
+        adapter.current.dispose();
+        adapter.current = null;
+      }
     };
   }, [project, level]);
+  const placing = placement !== null;
+  useEffect(() => {
+    if (placing) node.current?.focus({ preventScroll: true });
+  }, [placing]);
   const component = project.components.find((c) => c.id === selected && c.level === level);
   const activeCut = cut && component ? componentCutaway(project, live?.system ?? null, component.id, frame) : null;
   const warm = heat ? sceneHeat(project, frame).filter((h) => project.rooms.some((r) => r.id === h.roomId && r.level === level)) : [];
@@ -50,17 +65,20 @@ export function Scene({ project, level, selected, live, onSelect, onUnavailable 
     <div className="scene-options">
       <button onClick={() => adapter.current?.cameraMode('orbit')}>Общий вид</button>
       <button onClick={() => adapter.current?.cameraMode('top')}>Сверху</button>
-      <button disabled={!component} onClick={() => component && adapter.current?.focus(component.id)}>Фокус на узле</button>
-      <button onClick={() => { setSection((v) => !v); adapter.current?.cameraMode(section ? 'orbit' : 'slice'); }} aria-pressed={section}>Разрез пола</button>
+      <button className="scene-inspection-option" disabled={!component} onClick={() => component && adapter.current?.focus(component.id)}>Фокус на узле</button>
+      <button className="scene-inspection-option" onClick={() => { setSection((v) => !v); adapter.current?.cameraMode(section ? 'orbit' : 'slice'); }} aria-pressed={section}>Разрез пола</button>
       <button onClick={() => adapter.current?.zoom(.8)} aria-label="Приблизить 3D">+</button>
       <button onClick={() => adapter.current?.zoom(1.25)} aria-label="Отдалить 3D">−</button>
       <label><input type="checkbox" checked={transparent} onChange={(e) => setTransparent(e.target.checked)} /> Прозрачные стены</label>
       <label><input type="checkbox" checked={heat} onChange={(e) => setHeat(e.target.checked)} /> Тепловая карта</label>
       <label><input type="checkbox" checked={still} onChange={(e) => setStill(e.target.checked)} /> Без движения</label>
     </div>
-    <p className="scene-help" id="scene-camera-help">Мышь: перетаскивание поворачивает вид, колесо меняет масштаб. Щёлкните по сцене или выделите её клавишей Tab: стрелки и WASD перемещают камеру.</p>
-    <canvas ref={node} data-scene role="img" tabIndex={0} aria-describedby="scene-camera-help"
+    <p className="scene-help" id="scene-camera-help">{placing ?
+      'Сетка привязывает деталь к шагу 25 см. Красная подсветка отмечает занятое место.' :
+      'Мышь: перетаскивание поворачивает вид, колесо меняет масштаб. Камера перемещается клавишами: стрелки и WASD. Чтобы переставить деталь, выделите её и перетащите.'}</p>
+    <canvas ref={node} data-scene className={placement ? "scene-building" : undefined} role="img" tabIndex={0} aria-describedby="scene-camera-help"
       aria-keyshortcuts="ArrowUp ArrowLeft ArrowDown ArrowRight W A S D" aria-label="Интерактивная 3D схема. Объекты доступны в списке слева." />
+    <p className="scene-occupied" role="status">Место занято. Сместите деталь.</p>
     <div className="scene-legend">
       <p>{component ? 'Выбрано в 3D: ' + (equipmentRegistry.get(component.typeId)?.titleRu ?? component.typeId) : 'Выберите узел на схеме или в списке.'}</p>
       <p>Частицы показывают направление и скорость потока. Скорость анимации ×{numberRu(visualTimeScale, 2)}. {frame?.stale ?

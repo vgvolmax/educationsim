@@ -12,7 +12,7 @@ const required = {
   conveyance: ['main-pipe', 'riser', 'loop-pipe', 'pipe-insulation'],
   fittings: ['coupling', 'elbow', 'tee', 'adapter', 'eurocone', 'union', 'cap'],
   manifolds: ['supply-manifold', 'return-manifold', 'pair-flowmeters', 'pair-plain', 'dynamic-manifold'],
-  balancing: ['loop-balance', 'branch-balance', 'flowmeter'],
+  balancing: ['loop-balance', 'branch-balance', 'flowmeter', 'radiator-angle-valve', 'radiator-straight-valve'],
   isolation: ['ball-valve', 'loop-valve', 'motor-zone-valve'],
   directional: ['check', 'bypass', 'jumper', 'rtl'],
   circulation: ['pump', 'direct-pump-group'],

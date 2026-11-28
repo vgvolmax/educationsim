@@ -92,6 +92,11 @@ export function previewReplacement(
   });
 }
 
+export function hasAuthoredTraces(project: ProjectDocument, componentId: string) {
+  const routed = new Set(project.loopRoutes.map(({ linkId }) => linkId));
+  return project.hydronicLinks.some((link) => touches(link, componentId) && (link.points.length > 0 || routed.has(link.id)));
+}
+
 function applyEdit(project: ProjectDocument, command: ProjectEdit, registry: ComponentRegistry): Result<ProjectDocument> {
   switch (command.kind) {
     case 'set_component_parameters':
@@ -110,6 +115,16 @@ function applyEdit(project: ProjectDocument, command: ProjectEdit, registry: Com
           command.component.catalogSnapshotId !== command.catalogSnapshot.id)) return failure('catalog_snapshot', 'Неподходящий учебный снимок каталога.');
       return success({ ...project, components: [...project.components, command.component],
         appliedCatalogSnapshots: command.catalogSnapshot ? [...project.appliedCatalogSnapshots, command.catalogSnapshot] : project.appliedCatalogSnapshots });
+    case 'move_component': {
+      const component = project.components.find(({ id }) => id === command.componentId);
+      if (!component) return failure('missing_component', 'Компонент не найден.');
+      if (hasAuthoredTraces(project, component.id) &&
+          (component.position.x !== command.position.x || component.position.y !== command.position.y || component.position.z !== command.position.z)) {
+        return failure('authored_component_route', 'У детали уже проложена трасса. Сначала измените её в 2D.');
+      }
+      return success({ ...project, components: project.components.map((item) => item.id === component.id
+        ? { ...item, position: command.position, quarterTurns: command.quarterTurns } : item) });
+    }
     case 'remove_component': {
       if (!project.components.some(({ id }) => id === command.componentId)) return failure('missing_component', 'Компонент не найден.');
       const related = (link: ProjectDocument['hydronicLinks'][number] | ProjectDocument['controlLinks'][number]) => touches(link, command.componentId);

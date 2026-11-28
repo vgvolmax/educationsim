@@ -18,14 +18,14 @@ test('assembles_edits_runs_saves_imports_and_replays_large_project', async ({ pa
   await page.getByRole('button', { name: 'Стенд 1, помещение 1', exact: true }).click();
   await page.getByLabel('Ширина, м').fill('7,2');
   await page.getByRole('button', { name: 'Применить размеры' }).click();
-  await expect(page.getByText('Редакция 1')).toBeVisible();
+  await expect(page.getByText('Редакция 1', { exact: true })).toBeVisible();
   await prepare(page);
   await step(page);
   await expect(page.locator('[data-meter="link:g0-loop-0"]')).toHaveText(/[1-9].*л\/мин/);
   await page.getByRole('button', { name: 'Зафиксировать А' }).click();
   await page.getByLabel('Ширина, м').fill('7,3');
   await page.getByRole('button', { name: 'Применить размеры' }).click();
-  await expect(page.getByText('Редакция 2')).toBeVisible();
+  await expect(page.getByText('Редакция 2', { exact: true })).toBeVisible();
   await prepare(page); await step(page);
   await page.getByRole('button', { name: 'Зафиксировать Б' }).click();
   await page.getByRole('button', { name: 'Сохранить запись прогона' }).click();
@@ -33,7 +33,7 @@ test('assembles_edits_runs_saves_imports_and_replays_large_project', async ({ pa
   await expect(page.getByText('Проект сохранён локально.')).toBeVisible();
   await page.reload();
   await page.getByRole('button', { name: 'Открыть последний сохранённый проект' }).click();
-  await expect(page.getByText('Редакция 2')).toBeVisible();
+  await expect(page.getByText('Редакция 2', { exact: true })).toBeVisible();
   await expect(page.getByText(/А: редакция 1, тик 1. Б: редакция 2, тик 1./)).toBeVisible();
   await page.getByRole('button', { name: 'Файлы и имя проекта' }).click();
   const download = page.waitForEvent('download');
@@ -64,8 +64,8 @@ test('catalog training provenance survives reopening without overriding a real p
   await page.getByRole('button', { name: 'Газовый котёл · source' }).click();
   await page.getByRole('button', { name: 'Каталог ВОЛМАКС', exact: true }).click();
   await page.getByLabel('Поиск по артикулу, ID или названию').fill('7814104');
-  await page.getByTestId('offer-34039').click();
   await page.getByLabel('Контекст каталога').selectOption('heating');
+  await page.getByTestId('offer-34039').click();
   await page.getByRole('button', { name: 'Предпросмотр замены из каталога' }).click();
   await page.getByRole('button', { name: 'Применить учебную замену' }).click();
   await expect(page.getByText('Проект сохранён локально.')).toBeVisible();
