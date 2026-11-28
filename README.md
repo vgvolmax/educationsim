@@ -12,7 +12,7 @@
 
 ## Сборка в GitHub
 
-Откройте [EducationSim Windows preview release](https://github.com/vgvolmax/educationsim/actions/workflows/windows-preview-release.yml) и запустите **Run workflow** для ветки `main`. GitHub прогонит проверки, соберёт и проверит Windows ZIP, затем приложит архив и SHA-256 к черновику предварительного релиза. Архив также доступен в **Artifacts** соответствующего запуска.
+После каждого обновления `main` GitHub запускает [сборку Windows](https://github.com/vgvolmax/educationsim/actions/workflows/windows-preview-release.yml). После успешных проверок в [Releases](https://github.com/vgvolmax/educationsim/releases) появляется черновик предварительного релиза с Windows ZIP и SHA-256. Оба файла доступны в **Artifacts** соответствующего запуска. Повторную сборку можно запустить вручную через **Run workflow** для ветки `main`.
 
 Скачайте `EducationSim-Windows-x64.zip`, распакуйте его целиком и запустите `EducationSim.exe`. Для версии 1.0 действует отдельная приёмка по плану проекта.
 
