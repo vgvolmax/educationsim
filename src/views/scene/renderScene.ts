@@ -1,25 +1,27 @@
 import * as T from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { scenePlacement } from './scenePlacement';
+import type { Placement } from '../../editor/placement';
 import { createEquipment } from './createEquipment';
 import { bindCameraKeys, cameraTravel } from './camera-motion';
 import { createSceneQuality } from './quality';
 import { particleBudget, particleDistance, pipeFlow } from './flow';
 import { hasLiveFrame, sceneHeat } from './heatMap';
 import type { sceneInput } from './buildScene';
-import type { ProjectDocument } from '../../project/types';
+import type { Point2, ProjectDocument } from '../../project/types';
 import type { SessionView } from '../../simulation/session';
 
 type Input = ReturnType<typeof sceneInput>;
-type Options = { selected: string | null; transparent: boolean; heat: boolean; section: boolean; still: boolean; frame: SessionView | null };
+type Options = { selected: string | null; transparent: boolean; heat: boolean; section: boolean; still: boolean; frame: SessionView | null; placement: Placement | null };
 type PipeMesh = { id: string; path: T.CurvePath<T.Vector3>; length: number; diameter: number; dots: number; offset: number; material: T.MeshStandardMaterial };
 const brass = new T.Color(0x9b754f), cold = new T.Color(0x458da8), hot = new T.Color(0xc8703f);
-export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, project: ProjectDocument, get: () => Options, onPick: (id: string) => void) {
+export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, project: ProjectDocument, get: () => Options, onPick: (id: string) => void, onPlace: (point: Point2, part?: Placement) => void, onDrag: (id: string) => Placement | null) {
   const renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'low-power' });
   const quality = createSceneQuality();
   const pixelRatio = () => Math.min(window.devicePixelRatio || 1, 1.5) * quality.level.pixelScale;
   renderer.setPixelRatio(pixelRatio());
   const scene = new T.Scene();
-  scene.background = new T.Color(0xf2eee1);
+  scene.background = new T.Color(0xe8eff0);
   scene.add(new T.HemisphereLight(0xfffbeb, 0x9b9f93, 2.1));
   const key = new T.DirectionalLight(0xffeed6, 2.2); key.position.set(5, 9, -4); scene.add(key);
   const rig = new T.Group(); scene.add(rig);
@@ -31,12 +33,12 @@ export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, proj
   canvas.dataset.keyboardPans = '0';
   controls.enableDamping = true; controls.dampingFactor = .12; controls.minDistance = .4; controls.maxDistance = 400;
   controls.maxPolarAngle = Math.PI * .48;
-  const grid = new T.GridHelper(20, 40, 0xb5b6a2, 0xdad8cb); grid.position.y = data.floorY - .125; scene.add(grid);
+  const grid = new T.GridHelper(20, 40, 0xa4babb, 0xc6d4d5); grid.position.y = data.floorY - .125; scene.add(grid);
   const walls: T.Mesh<T.BoxGeometry, T.MeshStandardMaterial>[] = [];
   const floorMaterials = new Map<string, T.MeshStandardMaterial>();
   const equipment = new Map<string, T.Group>();
   const section = new T.Group(); rig.add(section);
-  const floorBase = new T.Color(0xdad2b6);
+  const floorBase = new T.Color(0xc8d6d0);
   for (const room of data.rooms) {
     const outline = room.outline;
     if (!outline.length) continue;
@@ -65,6 +67,9 @@ export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, proj
   for (const item of data.equipment) {
     const object = createEquipment(item); equipment.set(item.id, object); rig.add(object);
   }
+  const placementLayer = scenePlacement(scene, camera, canvas, data.floorY, equipment);
+  let groundPointer: Point2 | null = null;
+  let drag: { part: Placement; pointerId: number; moved: boolean } | null = null;
   const flowing: PipeMesh[] = [];
   let remaining = particleBudget;
   for (const pipe of data.pipes) {
@@ -116,7 +121,8 @@ export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, proj
   const ro = new ResizeObserver(resize); ro.observe(canvas); resize();
   function animate(time: number) {
     if (dead) return;
-    const { selected, transparent, heat, section: showSection, still, frame } = get();
+    const { selected, transparent, heat, section: showSection, still, frame, placement } = get();
+    controls.enableRotate = !placement && !drag;
     const live = hasLiveFrame(frame) ? frame : null;
     const frameMs = time - previous;
     const elapsed = !still && live?.mode === 'running' ? Math.max(0, Math.min(.1, frameMs / 1000)) : 0;
@@ -159,29 +165,65 @@ export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, proj
       controls.target.x += step.x; controls.target.z += step.z;
       if (step.x || step.z) canvas.dataset.keyboardPans = String(++keyboardPans);
     }
-    controls.update(); renderer.render(scene, camera);
+    controls.update(); placementLayer.preview(placement ?? (drag?.moved ? drag.part : null), groundPointer); renderer.render(scene, camera);
     frameId = requestAnimationFrame(animate);
   }
   frameId = requestAnimationFrame(animate);
   let pointer: { x: number; y: number } | null = null;
   function down(e: PointerEvent) {
-    if (e.button === 0) canvas.focus({ preventScroll: true });
-    pointer = e.button === 0 ? { x: e.clientX, y: e.clientY } : null;
+    if (e.button !== 0) return;
+    canvas.focus({ preventScroll: true });
+    pointer = { x: e.clientX, y: e.clientY };
+    const { placement, selected } = get();
+    if (!placement && selected && placementLayer.pick(e.clientX, e.clientY) === selected) {
+      const part = onDrag(selected);
+      if (!part) return;
+      drag = { part, pointerId: e.pointerId, moved: false };
+      canvas.setPointerCapture(e.pointerId);
+      e.stopImmediatePropagation();
+    }
+  }
+  function move(e: PointerEvent) {
+    groundPointer = { x: e.clientX, z: e.clientY };
+    if (drag && pointer && Math.hypot(pointer.x - e.clientX, pointer.y - e.clientY) > 6) drag.moved = true;
   }
   function pick(e: PointerEvent) {
-    if (!pointer || Math.hypot(pointer.x - e.clientX, pointer.y - e.clientY) > 6) return;
+    const start = pointer;
     pointer = null;
-    const r = canvas.getBoundingClientRect();
-    const ray = new T.Raycaster();
-    ray.setFromCamera(new T.Vector2((e.clientX - r.left) * 2 / r.width - 1, 1 - (e.clientY - r.top) * 2 / r.height), camera);
-    const hit = ray.intersectObjects([...equipment.values()], true)[0]?.object.userData.componentId;
+    if (!start) return;
+    if (drag) {
+      const current = drag;
+      drag = null;
+      if (canvas.hasPointerCapture(current.pointerId)) canvas.releasePointerCapture(current.pointerId);
+      if (current.moved) {
+        move(e);
+        const point = placementLayer.preview(current.part, groundPointer);
+        if (point) onPlace(point, current.part);
+      }
+      return;
+    }
+    if (Math.hypot(start.x - e.clientX, start.y - e.clientY) > 6) return;
+    const placement = get().placement;
+    if (placement) {
+      move(e);
+      const point = placementLayer.preview(placement, groundPointer);
+      if (point) onPlace(point);
+      return;
+    }
+    const hit = placementLayer.pick(e.clientX, e.clientY);
     if (typeof hit === 'string') onPick(hit);
   }
-  const cancelPointer = () => { pointer = null; };
-  canvas.addEventListener('pointerdown', down); canvas.addEventListener('pointerup', pick);
+  const cancelPointer = () => { pointer = null; groundPointer = null; drag = null; };
+  const leave = () => { if (!drag) cancelPointer(); };
+  canvas.addEventListener('pointerdown', down, true); canvas.addEventListener('pointerup', pick);
+  canvas.addEventListener('pointermove', move); canvas.addEventListener('pointerleave', leave);
   canvas.addEventListener('pointercancel', cancelPointer);
   return {
     cameraMode,
+    cameraPose() { return { position: camera.position.clone(), target: controls.target.clone() }; },
+    restoreCamera(pose: { position: T.Vector3; target: T.Vector3 }) {
+      camera.position.copy(pose.position); controls.target.copy(pose.target); controls.update();
+    },
     focus(id: string) {
       const selected = equipment.get(id);
       if (!selected) return;
@@ -195,8 +237,10 @@ export function createSceneRenderer(canvas: HTMLCanvasElement, data: Input, proj
     },
     dispose() {
       dead = true; cancelAnimationFrame(frameId); ro.disconnect(); keys.dispose(); controls.dispose();
-      canvas.removeEventListener('pointerdown', down); canvas.removeEventListener('pointerup', pick);
+      canvas.removeEventListener('pointerdown', down, true); canvas.removeEventListener('pointerup', pick);
       canvas.removeEventListener('pointercancel', cancelPointer);
+      canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerleave', leave);
+      placementLayer.dispose();
       scene.traverse((obj) => {
         if (obj instanceof T.Mesh || obj instanceof T.LineSegments) {
           obj.geometry.dispose();

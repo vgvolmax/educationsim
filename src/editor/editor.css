@@ -206,3 +206,21 @@
   .work-body { grid-template-columns: minmax(8rem, 10rem) minmax(0, 1fr) minmax(12rem, 14rem); }
   .work-body.wide-scene { grid-template-columns: minmax(8rem, 10rem) minmax(0, 1fr); }
 }
+
+.part-palette, .part-palette-picker, .scene-context, .placement-actions {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .5rem;
+}
+.part-palette { padding: .5rem clamp(.8rem, 3vw, 2rem); background: #dceae8; border-bottom: 1px solid var(--edge); }
+.part-palette > strong { margin-inline-end: .45rem; color: var(--brand-strong); }
+.part-palette button { min-height: 2rem; font-size: .865rem; }
+.part-palette-picker { flex: 1 1 100%; }
+.part-palette-picker label { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; min-width: 0; }
+.part-palette-picker select { max-width: min(24rem, 75vw); }
+.editor .editor-catalog { width: min(51rem, calc(100% - 1.3rem)); }
+.placement-strip { margin: .45rem min(2vw, 1.2rem); display: flex; flex-wrap: wrap; justify-content: space-between;
+  align-items: center; gap: .5rem .75rem; padding: .6rem .8rem; border: 1px solid #8ebdb5; border-radius: .65rem; background: var(--aqua); }
+.placement-strip p, .editor .placement-status { font-size: .86rem; }
+.editor .placement-status, .scene-context { margin: .45rem min(2vw, 1.2rem); }
+.drawing .plan-placement, .drawing .plan-placement * { cursor: crosshair; }
+.editor.is-placing .simulation-controls { display: none; }
+.editor.is-placing .scene-options label, .editor.is-placing .scene-inspection-option { display: none; }

@@ -64,8 +64,8 @@ test('catalog training provenance survives reopening without overriding a real p
   await page.getByRole('button', { name: 'Газовый котёл · source' }).click();
   await page.getByRole('button', { name: 'Каталог ВОЛМАКС', exact: true }).click();
   await page.getByLabel('Поиск по артикулу, ID или названию').fill('7814104');
-  await page.getByTestId('offer-34039').click();
   await page.getByLabel('Контекст каталога').selectOption('heating');
+  await page.getByTestId('offer-34039').click();
   await page.getByRole('button', { name: 'Предпросмотр замены из каталога' }).click();
   await page.getByRole('button', { name: 'Применить учебную замену' }).click();
   await expect(page.getByText('Проект сохранён локально.')).toBeVisible();

@@ -188,12 +188,12 @@ test('launches the packaged app offline, retains storage and rejects a second in
     await page.getByRole('button', { name: 'Закрыть каталог' }).click();
     await page.getByRole('button', { name: 'Старт' }).click();
     await page.getByRole('button', { name: /L01 · Подача, петля и обратка/ }).click();
-    await expect(page.locator('[data-link].water').first()).not.toHaveCSS('stroke', 'none');
-    await page.getByRole('button', { name: 'Один шаг расчёта', exact: true }).click();
-    await expect(page.getByText('Модельный тик: 1')).toBeVisible();
-    await page.getByRole('button', { name: 'Найти подачу' }).click();
-    await page.getByRole('button', { name: 'Найти петлю пола' }).click();
-    await page.getByRole('button', { name: 'Найти обратку' }).click();
+    await expect(page.locator('[data-link="supply"]')).not.toHaveCSS('stroke', 'none');
+    await page.getByRole('button', { name: 'Запустить воду', exact: true }).click();
+    await expect(page.getByText('Расход в петле 1: 2,94 л/мин')).toBeVisible();
+    await page.getByRole('button', { name: 'Показать подачу' }).click();
+    await page.getByRole('button', { name: 'Показать петлю пола' }).click();
+    await page.getByRole('button', { name: 'Показать обратку' }).click();
     await expect(page.getByText('Урок пройден.', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Следующее задание', exact: true }).click();
     await page.getByRole('button', { name: 'Один шаг расчёта', exact: true }).click();

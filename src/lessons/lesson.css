@@ -26,7 +26,6 @@
 .lesson-primary span { color: var(--muted); font-size: .86rem; font-variant-numeric: tabular-nums; }
 .lesson-actions { margin-block: .6rem; }
 .lesson-actions button[aria-pressed=true] { background: var(--aqua); color: var(--brand-strong); border-color: var(--teal); }
-.lesson-actions button[data-line][aria-pressed=true] { box-shadow: inset 0 -2px var(--lesson-line); border-color: var(--lesson-line); }
 .lesson-footer { margin-top: .85rem; }
 .lesson-rubric p, .lesson-result p { margin-block: .45rem; }
 .criteria-list { margin: .5rem 0; padding: 0; list-style: none; }
@@ -77,27 +76,45 @@
 .lesson-library-group .template-list b { color: var(--brand-strong); }
 
 .lesson-bench .plan-link { cursor: pointer; }
-.lesson-node-key { display: flex; flex-wrap: wrap; gap: .35rem; align-items: baseline; margin: .45rem 0 0; font-size: .85rem; }
-.lesson-node-key strong { margin-inline-start: .5rem; color: var(--brand-strong); }
-.lesson-node-key span { margin-inline-start: .6rem; }
-[data-line=supply], [data-lesson-link=supply] { --lesson-line: #a34426; }
-[data-line=pipe-a], [data-lesson-link=pipe-a] { --lesson-line: #10675c; }
-[data-line=return], [data-lesson-link=return] { --lesson-line: #235d8a; }
-.lesson-bench .plan-link[data-lesson-link] { stroke: var(--lesson-line); stroke-width: .055; }
-.lesson-bench .plan-link.lesson-identified { stroke-width: .115; stroke-linecap: round; }
-.lesson-bench .plan-direction { pointer-events: none; }
-
-.first-lesson-guide { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .4rem .65rem; align-items: center;
-  margin-top: .55rem; padding: .5rem .65rem; background: var(--aqua); color: var(--brand-strong);
-  border: 1px solid #8ebdb5; border-radius: var(--radius); }
-.first-lesson-step { align-self: start; white-space: nowrap; border: 1px solid currentColor; border-radius: 2rem;
-  padding: .12rem .5rem; font-size: .77rem; font-weight: 750; }
-.first-lesson-guide p { margin: .12rem 0 0; font-size: .85rem; }
-.first-lesson-reading { font-weight: 720; font-variant-numeric: tabular-nums; text-align: end; }
-.first-lesson-next-action { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: .4rem; }
-@media (max-width: 980px) {
-  .first-lesson-guide { grid-template-columns: auto minmax(0, 1fr); }
-  .first-lesson-guide .first-lesson-reading { grid-column: 2; text-align: start; }
+.lesson-bench .plan-link.lesson-identified { stroke: var(--copper); stroke-width: .095; }
+.first-lesson-guide { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .65rem 1rem;
+  padding: .85rem 1rem; background: var(--aqua); border: 1px solid #8ebdb5; border-radius: var(--radius); }
+.first-lesson-guide p { margin: .2rem 0 0; font-size: .9rem; }
+.first-lesson-guide .eyebrow { margin: 0 0 .26rem; font-size: .73rem; }
+.first-lesson-guide h2 { font-size: clamp(1.1rem, 2vw, 1.45rem); }
+.first-lesson-next-action { display: flex; flex-wrap: wrap; gap: .45rem; }
+.first-lesson-next-action button { min-height: 2.75rem; }
+.first-lesson-next-action button[aria-disabled=true] { opacity: .67; cursor: wait; }
+.first-lesson-diagram { margin-top: .75rem; padding: .45rem .6rem; border: 1px solid var(--edge);
+  border-radius: var(--radius); background: #f6faf9; }
+.first-lesson-picture { position: relative; max-width: 800px; margin-inline: auto; }
+.first-lesson-picture svg { display: block; width: 100%; height: auto; }
+.first-lesson-floor { fill: #deefeb; stroke: #a0c5bf; stroke-width: 2; }
+.first-lesson-device { fill: #fff; stroke: #668e8a; stroke-width: 2.5; }
+.first-lesson-collector { fill: #d4e4e3; }
+.first-lesson-equipment-label { fill: var(--ink); font: 700 22px "Segoe UI", system-ui, sans-serif; text-anchor: middle; }
+.first-lesson-heater, .first-lesson-header-pipe { fill: none; stroke: #557c79; stroke-width: 5; stroke-linecap: round; }
+[data-segment=supply] { --pipe-color: #a64722; }
+[data-segment=pipe-a] { --pipe-color: #09685b; }
+[data-segment=return] { --pipe-color: #245e90; }
+.first-lesson-pipe, .first-lesson-arrow, .first-lesson-hit { fill: none; vector-effect: non-scaling-stroke; }
+.first-lesson-pipe, .first-lesson-arrow { stroke: var(--pipe-color); stroke-width: 5px; stroke-linecap: round; }
+.first-lesson-pipe.lesson-identified { stroke-width: 9px; }
+.first-lesson-hit { stroke: transparent; stroke-width: 30px; pointer-events: stroke; cursor: pointer; }
+.first-lesson-hit:hover { stroke: color-mix(in srgb, var(--pipe-color) 18%, transparent); }
+.first-lesson-diagram-button { position: absolute; transform: translate(-50%, -50%); min-height: 2.25rem;
+  white-space: nowrap; padding: .32rem .65rem; border-color: var(--pipe-color); color: var(--pipe-color); font-weight: 700; }
+.first-lesson-diagram-button[aria-pressed=true], .first-lesson-diagram-button[aria-pressed=true]:hover {
+  background: var(--pipe-color); color: white; }
+.first-lesson-caption { min-height: 1.5em; margin: .1rem .35rem .35rem; font-size: .87rem; }
+.first-lesson-reading { padding: .5rem .65rem; background: var(--surface); border-radius: .5rem; font-weight: 740; font-variant-numeric: tabular-nums; }
+.first-lesson-checklist { padding: 0; margin: .6rem 0 0; list-style: none; }
+.first-lesson-checklist li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .3rem .5rem;
+  padding: .36rem .3rem .36rem .6rem; border-left: 3px solid var(--pipe-color); }
+.first-lesson-checklist span { color: var(--muted); font-size: .88rem; }
+@media (max-width: 510px) {
+  .first-lesson-diagram-button { padding-inline: .4rem; min-height: 1.85rem; font-size: .78rem; }
+  .first-lesson-equipment-label { font-size: 26px; }
 }
 @media (min-width: 761px) {
   .lesson-grid.assessed > .lesson-rubric { position: sticky; top: .75rem; }
@@ -106,8 +123,9 @@
   .lesson-grid, .lesson-grid.assessed { grid-template-columns: minmax(0, 1fr); }
 }
 @media (forced-colors: active) {
-  .lesson-bench .plan-link[data-lesson-link] { stroke: CanvasText; }
-  .lesson-bench .plan-link.lesson-identified { stroke: Highlight; }
+  .lesson-bench .plan-link.lesson-identified, .first-lesson-pipe.lesson-identified { stroke: Highlight; }
+  .first-lesson-pipe, .first-lesson-arrow { stroke: CanvasText; }
+  .first-lesson-diagram-button[aria-pressed=true] { outline: 2px solid Highlight; }
   .lesson-questions label:has(input:checked) { outline: 1px solid Highlight; }
 }
 

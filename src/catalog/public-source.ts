@@ -57,7 +57,10 @@ export function compilePublicSources(assortmentText: string, reviewText: string,
     if (ruling) used.add(offerId);
     const scope = (ruling?.review_status ?? (row.scope_status === 'water_floor' ? 'floor' : 'excluded')) as CatalogOffer['scope'];
     const allowedContexts = contexts.has(scope as CatalogContext) ? [scope as CatalogContext] : [];
-    const analogue = allowedContexts.length > 0 ? (ruling ? confirmedTeachingRoles.get(ruling.engineering_role ?? '') :
+    const radiatorValve = scope === 'radiator' && ruling?.engineering_role === 'Радиаторный термостатический клапан'
+      ? (/углов(?:ой|ая|ое)/iu.test(row.name ?? '') ? 'training-radiator-angle-valve' :
+          /прям(?:ой|ая|ое)/iu.test(row.name ?? '') ? 'training-radiator-straight-valve' : undefined) : undefined;
+    const analogue = allowedContexts.length > 0 ? (ruling ? radiatorValve ?? confirmedTeachingRoles.get(ruling.engineering_role ?? '') :
       knownArticles.get(article)) : undefined;
     const salesGate = (ruling?.sales_gate ?? (scope === 'excluded' ? 'out_of_scope' : 'no_review')) as CatalogOffer['salesGate'];
     return { channel: 'volmax', offerId, article, brand, url, title: need(row.name, 'offer name'), scope, salesGate,

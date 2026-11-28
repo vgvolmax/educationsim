@@ -6,9 +6,9 @@ import { sketchPairKey, untracedPath } from './untraced-path';
 import type { Point2, ProjectDocument } from '../../project/types';
 
 type Props = { project: ProjectDocument; level: number; selected: string | null;
-  onSelect(id: string): void; selectedLink?: string | null; onLinkSelect?(id: string): void; water: boolean; control: boolean; overlay?: RouteOverlay; lessonLinks?: Readonly<Record<string, string>> };
-export function Schematic({ project, level, selected, onSelect, selectedLink, onLinkSelect, water, control, overlay, lessonLinks }: Props) {
-  const gridId = useId(), directionId = useId();
+  onSelect(id: string): void; onPlace?(point: Point2): void; selectedLink?: string | null; onLinkSelect?(id: string): void; water: boolean; control: boolean; overlay?: RouteOverlay };
+export function Schematic({ project, level, selected, onSelect, onPlace, selectedLink, onLinkSelect, water, control, overlay }: Props) {
+  const gridId = useId();
   const rooms = project.rooms.filter((room) => room.level === level);
   const components = project.components.filter((component) => component.level === level);
   const lookup = new Map(project.components.map((c) => [c.id, c]));
@@ -42,53 +42,35 @@ export function Schematic({ project, level, selected, onSelect, selectedLink, on
   const width = Math.max(minX + 7, ...pts.map((p) => p.x + .7)) - minX;
   const depth = Math.max(minZ + 5, ...pts.map((p) => p.z + .7)) - minZ;
   const pointList = (points: Point2[]) => points.map(({ x, z }) => x + ',' + z).join(' ');
-  function arrow(points: Point2[]) {
-    let length = 0;
-    let segment: [Point2, Point2] | undefined;
-    for (let i = 1; i < points.length; i++) {
-      const a = points[i-1]!, b = points[i]!;
-      const distance = Math.hypot(b.x-a.x, b.z-a.z);
-      if (distance > length) { length = distance; segment = [a, b]; }
-    }
-    if (!segment) return null;
-    const [a, b] = segment;
-    return pointList([a, { x: (a.x+b.x)/2, z: (a.z+b.z)/2 }]);
-  }
   return (
     <div className="drawing">
-      <svg viewBox={[minX, minZ, width, depth].join(' ')} role="img" aria-label="Схема этажа">
+      <svg viewBox={[minX, minZ, width, depth].join(' ')} role="img" aria-label="Схема этажа"
+        className={onPlace ? 'plan-placement' : undefined} onClick={onPlace ? (event) => {
+          const projection = event.currentTarget.getScreenCTM();
+          if (!projection) return;
+          const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(projection.inverse());
+          onPlace({ x: point.x, z: point.y });
+        } : undefined}>
         <defs><pattern id={gridId} x="0" y="0" width=".25" height=".25" patternUnits="userSpaceOnUse">
           <path d="M .25 0 H 0 V .25" fill="none" stroke="#d8dacf" strokeWidth=".018" />
-        </pattern>
-          {lessonLinks && <marker id={directionId} viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth=".22" markerHeight=".22" orient="auto">
-            <path d="M0 0 10 5 0 10z" fill="context-stroke" />
-          </marker>}
-        </defs>
+        </pattern></defs>
         <rect x={minX} y={minZ} width={width} height={depth} fill={'url(#' + gridId + ')'} />
         {rooms.map((room) => {
           const rectangle = rectangleOf(room);
           return <g key={room.id}>
           <polygon points={pointList(room.outline)} data-room={room.id} data-width={rectangle?.widthM}
-            className={selected === room.id ? 'room selected' : 'room'} onClick={() => onSelect(room.id)} />
+            className={selected === room.id ? 'room selected' : 'room'} onClick={onPlace ? undefined : () => onSelect(room.id)} />
           <text className="room-name" x={(rectangle?.x ?? room.outline[0]!.x) + .14}
             y={rectangle ? rectangle.z + rectangle.depthM - .16 : room.outline[0]!.z + .25}>{room.name}</text>
         </g>; })}
-        {lines.map(({ id, points, domain, approximate }) => {
-          const label = lessonLinks?.[id];
-          const direction = label && arrow(points);
-          const className = 'plan-link ' + domain + (approximate ? ' approximate' : '') + (selectedLink === id ? ' lesson-identified' : '');
-          return <g key={domain + id}>
-            <polyline data-link={id} data-lesson-link={label ? id : undefined} points={pointList(points)}
-              onClick={onLinkSelect ? () => onLinkSelect(id) : undefined} className={className}>
-              <title>{label ?? id}{approximate ? ' · трасса не задана' : ''}</title>
-            </polyline>
-            {direction && <polyline className={className + ' plan-direction'} data-lesson-link={id}
-              points={direction} markerEnd={'url(#' + directionId + ')'} aria-hidden="true" />}
-          </g>;
-        })}
+        {lines.map(({ id, points, domain, approximate }) => <polyline key={domain + id} data-link={id}
+          points={pointList(points)} onClick={onLinkSelect ? () => onLinkSelect(id) : undefined}
+          className={'plan-link ' + domain + (approximate ? ' approximate' : '') + (selectedLink === id ? ' lesson-identified' : '')}>
+          <title>{id}{approximate ? ' · трасса не задана' : ''}</title>
+        </polyline>)}
         {overlay?.points?.length && <polyline data-route-preview points={pointList([...overlay.points])} className="route-preview"><title>Черновик трассы</title></polyline>}
         {overlay?.mark && <circle cx={overlay.mark.x} cy={overlay.mark.z} r=".1" className="route-mark"><title>Место ошибки трассировки</title></circle>}
-        {components.map((c) => <g key={c.id} onClick={() => onSelect(c.id)} className="plan-equipment">
+        {components.map((c) => <g key={c.id} onClick={onPlace ? undefined : () => onSelect(c.id)} className="plan-equipment">
           <circle data-component={c.id} cx={c.position.x} cy={c.position.z} r=".16" className={selected === c.id ? 'selected' : ''} />
           <text x={c.position.x} y={c.position.z + .005} className="equipment-index">{(orders.get(c.id) ?? 0) + 1}</text><title>{equipmentRegistry.get(c.typeId)?.titleRu ?? c.id}</title>
         </g>)}

@@ -29,7 +29,7 @@ const room = z.strictObject({
 });
 
 const component = z.strictObject({
-  id, typeId: id, position: point3, level, roomId: id.nullable(),
+  id, typeId: id, position: point3, quarterTurns: z.int().min(0).max(3).optional(), level, roomId: id.nullable(),
   catalogSnapshotId: id.nullable(), parameters,
 });
 

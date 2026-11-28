@@ -46,6 +46,7 @@ export type ProjectEdit = NamedCommand & (
   | InspectorEdit
   | { kind: 'rename_project'; title: string }
   | { kind: 'add_component'; component: ComponentInstance; catalogSnapshot?: CatalogParameterSnapshot }
+  | { kind: 'move_component'; componentId: string; position: Point3; quarterTurns: number }
   | { kind: 'remove_component'; componentId: string }
   | { kind: 'connect_hydronic'; link: HydronicLink }
   | { kind: 'connect_control'; link: ControlLink }

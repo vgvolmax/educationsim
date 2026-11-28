@@ -73,8 +73,8 @@ test('canvas supports WASD and arrows without taking keys from a form', async ({
 
   await page.keyboard.down('ArrowDown');
   await frames();
-  await page.getByRole('button', { name: 'Монтаж и свойства' }).click();
-  const field = page.getByLabel('X, м', { exact: true });
+  await page.getByRole('button', { name: 'Файлы и имя проекта' }).click();
+  const field = page.getByLabel('Имя проекта', { exact: true });
   await field.focus();
   await expect(field).toBeFocused();
   const blur = await panCount();
@@ -82,10 +82,12 @@ test('canvas supports WASD and arrows without taking keys from a form', async ({
   await frames();
   expect(await panCount()).toBe(blur);
   await page.keyboard.up('ArrowDown');
-  await field.fill('1,2');
-  await expect(field).toHaveValue('1,2');
+  await field.fill('Учебный стенд');
+  await expect(field).toHaveValue('Учебный стенд');
+  await page.getByRole('button', { name: 'Файлы и имя проекта' }).click();
   const preTop = await canvas.screenshot();
   await page.getByRole('button', { name: 'Сверху', exact: true }).click();
+  await canvas.scrollIntoViewIfNeeded();
   const top = await canvas.screenshot();
   expect(top.equals(preTop)).toBe(false);
   const r = (await canvas.boundingBox())!;

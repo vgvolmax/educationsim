@@ -25,8 +25,8 @@ test('the home, lesson and running editor fit a narrow viewport without page ove
   await fits();
   await page.getByRole('link', { name: 'К учебным заданиям' }).click();
   await page.getByRole('button', { name: /^L01 ·/ }).click();
-  await page.getByRole('button', { name: 'Один шаг расчёта', exact: true }).click();
-  await expect(page.getByText('Модельный тик: 1', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Запустить воду', exact: true }).click();
+  await expect(page.getByText('Расход в петле 1: 2,94 л/мин', { exact: true })).toBeVisible();
   await fits();
   await page.getByRole('button', { name: '← К заданиям', exact: true }).first().click();
   await page.getByRole('button', { name: 'Прямое подключение: две петли' }).click();

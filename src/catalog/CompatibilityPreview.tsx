@@ -3,31 +3,23 @@ import { analogueAvailability, catalogueSnapshot, previewAnalogueReplacement } f
 import { editorId } from '../editor/useProject';
 import type { ProjectController } from '../editor/useProject';
 import type { ComponentInstance, ProjectDocument, ReplaceComponentCommand } from '../project/types';
+import type { Placement } from '../editor/placement';
 import { useState } from 'react';
 
 type Props = { offer: CatalogOffer; context: CatalogContext; project: ProjectDocument; selected: ComponentInstance | undefined;
-  releaseId: string; level: number; ctl: ProjectController; onPlaced(id: string): void };
-export function CompatibilityPreview({ offer, context, project, selected, releaseId, level, ctl, onPlaced }: Props) {
+  releaseId: string; ctl: ProjectController; onPlaced(id: string): void; onPlace(placement: Placement): void };
+export function CompatibilityPreview({ offer, context, project, selected, releaseId, ctl, onPlaced, onPlace }: Props) {
   const result = analogueAvailability(offer, context);
   const [pending, setPending] = useState<{ command: ReplaceComponentCommand; retained: number; lost: string[] }>();
-  if (!result.allowed && !offer.analogue) return <p>{result.reason}</p>;
+  if (!result.allowed) return <p className="catalog-assistance">{result.reason} В проекте можно выбрать деталь из палитры «Детали».</p>;
   return <section className="catalog-fit" aria-label="Учебное применение">
-    <h4>Учебное применение</h4>
-    <p>{result.allowed ? 'Отдельная учебная модель: ' + result.profile.titleRu + '. Она не подтверждает присоединения и параметры SKU.' : result.reason}</p>
     <div className="catalog-actions">
-      <button disabled={!result.allowed} onClick={() => {
-        if (!result.allowed) return;
-        const type = result.profile.component, id = editorId('catalog');
-        const snapshot = catalogueSnapshot(offer, releaseId, type.id, editorId('snapshot'), context);
-        const room = project.rooms.find((room) => room.level === level);
-        const anchor = room?.outline[0];
-        const component: ComponentInstance = { id, typeId: type.id, level, roomId: null,
-          position: { x: (anchor?.x ?? 0) + .7, y: level * 3, z: (anchor?.z ?? 0) + .9 },
-          catalogSnapshotId: snapshot.id, parameters: { ...type.defaultParameters } };
-        if (ctl.apply({ kind: 'add_component', commandId: editorId('install'), component, catalogSnapshot: snapshot })) onPlaced(id);
-      }}>Установить учебный аналог</button>
-      {selected && <button disabled={!result.allowed} onClick={() => {
-        if (!result.allowed) return;
+      <button className="action-primary" type="button" onClick={() => {
+        const typeId = result.profile.id;
+        const snapshot = catalogueSnapshot(offer, releaseId, typeId, editorId('snapshot'), context);
+        onPlace({ typeId, snapshot, quarterTurns: 0 });
+      }}>Разместить на сцене</button>
+      {selected && <button onClick={() => {
         const snapshot = catalogueSnapshot(offer, releaseId, result.profile.id, editorId('snapshot'), context);
         const proposal = previewAnalogueReplacement(project, selected, snapshot, editorId('replace'));
         if (!proposal.ok) { ctl.setError(proposal.diagnostics[0].message); return; }
